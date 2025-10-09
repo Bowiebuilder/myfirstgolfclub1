@@ -109,3 +109,154 @@ input, textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px s
 /* Month/Year selects */
 .ym-select { margin-right: 8px; }
 .checkbox { margin: 10px 0; }
+
+/* =========================
+   ACCESSIBILITY & CONTRAST
+   ========================= */
+
+/* Global readable defaults */
+:root{
+  --bg: #ffffff;
+  --text: #0f172a;          /* very dark slate */
+  --text-muted: #1f2937;    /* dark gray for secondary copy */
+  --subtle: #374151;        /* labels/help text */
+  --border: #cbd5e1;        /* light slate border */
+  --border-strong: #94a3b8; /* stronger border when needed */
+  --field-bg: #ffffff;
+  --placeholder: #6b7280;   /* medium gray; still readable */
+  --focus: #2563eb;         /* blue focus ring with AA contrast */
+  --btn-bg: #0f172a;        /* dark button */
+  --btn-text: #ffffff;      /* button text */
+  --btn-bg-hover: #0b1223;
+}
+
+/* Base text & layout improvements */
+html, body {
+  color: var(--text);
+  background: var(--bg);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.site-header p,
+.card p,
+.stat-label,
+.pc-meta,
+.pc-row span,
+.status {
+  color: var(--text-muted);
+}
+
+/* Headings more legible */
+h1, h2, h3 {
+  color: var(--text);
+  line-height: 1.25;
+}
+
+/* Cards: stronger edge for white-on-white */
+.card {
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+/* Form fields: darker text, thicker borders, better focus */
+input[type="text"],
+input[type="number"],
+input[type="month"],
+input[type="file"],
+input:not([type]),
+textarea,
+select {
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+/* Hover/active state for fields */
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--border-strong);
+}
+
+/* High-visibility focus ring */
+input:focus,
+textarea:focus,
+select:focus,
+button:focus,
+a:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-color: var(--focus);
+}
+
+/* Labels are block and darker */
+label {
+  color: var(--subtle);
+  font-weight: 600;
+  display: block;
+}
+
+/* Buttons: high-contrast dark */
+.btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-bg);
+  font-weight: 600;
+  padding: 10px 16px;
+}
+
+.btn:hover { background: var(--btn-bg-hover); }
+
+/* Status text readable */
+.status {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Autocomplete dropdown: stronger contrast */
+.ac-list {
+  border: 1.5px solid var(--border);
+  background: #ffffff;
+}
+
+.ac-item { color: var(--text); }
+.ac-item:hover, .ac-item.active {
+  background: #eef2ff; /* pale blue for strong focus visibility */
+}
+
+/* Map popup (player card) text contrast */
+.pc-name { color: var(--text); }
+.pc-meta { color: var(--subtle); }
+.pc-row span { color: var(--subtle); }
+.pc-note { color: var(--text); }
+
+/* Stats tiles: stronger text */
+.stat-value { color: var(--text); }
+.stat-label { color: var(--subtle); }
+
+/* Checkbox label readability */
+.checkbox label { color: var(--text); }
+
+/* Ensure links are clearly visible */
+a { color: #1d4ed8; font-weight: 600; }
+a:hover { text-decoration: underline; }
+
+/* Small screens: ensure spacing remains legible */
+@media (max-width: 720px){
+  .card { padding: 14px; }
+  label { margin-bottom: 4px; }
+}
