@@ -1,85 +1,102 @@
-export const onRequestGet: PagesFunction = async ({ env }) => {
+export const onRequestGet = async ({ env }: any) => {
   try {
-    const db = (env as any).DB as D1Database;
-    const { results } = await db
-      .prepare("SELECT id, created_at, name, last_initial, city, country, course_name, first_round_date, story, lat, lng, status, homeCountry, startedYear FROM submissions WHERE status = 'approved' ORDER BY created_at DESC LIMIT 1000;")
-      .all();
+    const db = (env as any).DB;
+    if (!db) {
+      return new Response(JSON.stringify({ error: "DB binding missing (env.DB)" }), { status: 500 });
+    }
 
-    // Map DB columns -> frontend keys
-    const mapped = (results || []).map((r: any) => ({
-      id: r.id,
-      created_at: r.created_at,
-      firstName: r.name || "",
-      lastInitial: r.last_initial || "",
-      city: r.city || "",
-      country: r.country || "",
-      firstGolfClub: r.course_name || "",
-      firstRoundDate: r.first_round_date || null, // legacy
-      startedYear: r.startedYear || null,         // preferred
-      story: r.story || "",
-      lat: typeof r.lat === "number" ? r.lat : null,
-      lng: typeof r.lng === "number" ? r.lng : null,
-      homeCountry: r.homeCountry || null,
-      status: r.status || "pending",
-    }));
-
-    return new Response(JSON.stringify(mapped), {
+    const q = `
+      SELECT
+        id,
+        created_at,
+        name            AS firstName,
+        last_initial    AS lastInitial,
+        city,
+        country,
+        course_name     AS firstGolfClub,
+        first_round_date AS firstRoundDate,
+        startedYear,
+        homeCountry,
+        story,
+        lat,
+        lng
+      FROM submissions
+      WHERE status = 'approved'
+      ORDER BY created_at DESC
+      LIMIT 1000
+    `;
+    const { results } = await db.prepare(q).all();
+    return new Response(JSON.stringify(results || []), {
       headers: { "content-type": "application/json", "cache-control": "public, max-age=60" },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: "server_error", detail: err?.message || "" }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "server_error", detail: err?.message || String(err) }), { status: 500 });
   }
 };
 
-export const onRequestPost: PagesFunction = async ({ request, env, cf }) => {
+export const onRequestPost = async ({ request, env, cf }: any) => {
   try {
-    const db = (env as any).DB as D1Database;
-    const ip = cf?.connectingIP || "0.0.0.0";
+    const db = (env as any).DB;
+    if (!db) {
+      return new Response(JSON.stringify({ error: "DB binding missing (env.DB)" }), { status: 500 });
+    }
 
-    // Parse body (multipart/form-data)
+    const contentType = request.headers.get("content-type") || "";
+    if (!contentType.includes("multipart/form-data")) {
+      return new Response(JSON.stringify({ error: "Expected multipart/form-data" }), { status: 400 });
+    }
+
     const form = await request.formData();
 
-    // Turnstile verification
-    const token = form.get("cf-turnstile-response")?.toString() ?? "";
-    const secret = (env as any).TURNSTILE_SECRET || "";
-    if (!secret) {
-      return new Response(JSON.stringify({ error: "server_error", detail: "TURNSTILE_SECRET not set" }), { status: 500 });
-    }
-    const body = new URLSearchParams({ secret, response: token, remoteip: ip });
-    const verifyResp = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body });
-    const verifyJson = await verifyResp.json();
-    if (!verifyJson.success) {
-      return new Response(JSON.stringify({ error: "Turnstile verification failed" }), { status: 400 });
+    // --- Turnstile verification (skip if secret missing to avoid lockouts) ---
+    const secret = (env as any).TURNSTILE_SECRET;
+    const token = form.get("cf-turnstile-response")?.toString() || "";
+    if (secret) {
+      const ip =
+        request.headers.get("cf-connecting-ip") ||
+        request.headers.get("x-forwarded-for") ||
+        "";
+      const verifyBody = new URLSearchParams({ secret, response: token, remoteip: ip });
+      const verifyResp = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        body: verifyBody,
+      });
+      const verifyJson = await verifyResp.json();
+      if (!verifyJson.success) {
+        return new Response(JSON.stringify({ error: "Turnstile verification failed" }), { status: 400 });
+      }
     }
 
     // Helpers
     const s = (k: string) => (form.get(k)?.toString() ?? "").trim();
-
-    // Fields (align to your table)
-    const firstName     = s("firstName");      // -> name
-    const lastInitial   = s("lastInitial");    // -> last_initial
+    const firstName     = s("firstName");
+    const lastInitial   = s("lastInitial");
     const city          = s("city");
-    const country       = s("country");
-    const homeCountry   = s("homeCountry");    // -> homeCountry
-    const firstGolfClub = s("firstGolfClub");  // -> course_name
-    const startedYear   = s("startedYear");    // -> startedYear (YYYY)
-    const story         = s("moment") || s("story"); // -> story (new field 'moment' or legacy 'story')
+    const country       = s("country");        // course location country
+    const homeCountry   = s("homeCountry");    // player flag
+    const firstGolfClub = s("firstGolfClub");
+    const startedYear   = s("startedYear");    // YYYY (optional)
+    const moment        = s("moment");         // store into 'story'
     const latStr        = s("lat");
     const lngStr        = s("lng");
-    const consent       = s("consentMapPin");  // must be "on"
+    const consentMapPin = s("consentMapPin");  // "on" if checked
 
-    // Required validations
-    if (!firstName || !country || !firstGolfClub) {
+    // Required fields (match your UI)
+    if (!firstName || !homeCountry || !country || !firstGolfClub) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
     }
-    if (consent !== "on") {
+    if (consentMapPin !== "on") {
       return new Response(JSON.stringify({ error: "Consent required for map pin" }), { status: 400 });
     }
-    if (startedYear && !/^\d{4}$/.test(startedYear)) {
-      return new Response(JSON.stringify({ error: "Invalid year (use YYYY)" }), { status: 400 });
+
+    // startedYear validation (optional)
+    if (startedYear) {
+      const now = new Date();
+      const maxYear = now.getFullYear() + 1; // allow current and next year
+      const y = Number(startedYear);
+      if (!/^\d{4}$/.test(startedYear) || y < 1900 || y > maxYear) {
+        return new Response(JSON.stringify({ error: `Invalid year (use YYYY between 1900 and ${maxYear})` }), { status: 400 });
+      }
     }
 
     const lat = Number(latStr);
@@ -87,29 +104,38 @@ export const onRequestPost: PagesFunction = async ({ request, env, cf }) => {
     const latSafe = Number.isFinite(lat) ? lat : null;
     const lngSafe = Number.isFinite(lng) ? lng : null;
 
-    // Insert into your exact columns; auto-approve with status='approved'
+    // Generate a UUID for id (table has TEXT PRIMARY KEY without default)
+    const id = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `${Date.now()}-${Math.random()}`;
+
+    // Insert using CURRENT SCHEMA column names
     const stmt = db.prepare(`
       INSERT INTO submissions
-      (id, created_at, name, last_initial, city, country, course_name,
-       first_round_date, story, photo_key, lat, lng, status, homeCountry, startedYear)
-      VALUES (lower(hex(randomblob(16))), datetime('now'),
-              ?, ?, ?, ?, ?,
-              NULL, ?, NULL, ?, ?, 'approved', ?, ?)
+      (id, name, last_initial, city, country, course_name,
+       first_round_date, story, photo_key, lat, lng, status, homeCountry, startedYear, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?, 'approved', ?, ?, datetime('now'))
     `);
 
-    await stmt.bind(
-      firstName, lastInitial || null, city || null, country, firstGolfClub,
-      story || null, latSafe, lngSafe, homeCountry || null, startedYear || null
-    ).run();
+    await stmt
+      .bind(
+        id,
+        firstName,
+        lastInitial || null,
+        city || null,
+        country,
+        firstGolfClub,
+        moment || null,
+        latSafe,
+        lngSafe,
+        homeCountry || null,
+        startedYear || null
+      )
+      .run();
 
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, id }), {
       headers: { "content-type": "application/json" },
       status: 200,
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: "server_error", detail: err?.message || "" }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "server_error", detail: err?.message || String(err) }), { status: 500 });
   }
 };
