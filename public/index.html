@@ -26,23 +26,29 @@
             <input name="lastInitial" maxlength="3" />
           </label>
         </div>
+
         <div class="grid">
           <label>City
             <input name="city" />
           </label>
           <label>Country
-            <input name="country" required />
+            <input name="country" id="country" list="countries" required placeholder="Start typing…" />
+            <datalist id="countries"></datalist>
           </label>
         </div>
+
         <label>Golf club / course name
           <input name="firstGolfClub" required />
         </label>
-        <label>When was your first round? (YYYY-MM)
-          <input name="firstRoundDate" placeholder="2021-07" pattern="^\d{4}-\d{2}$" />
+
+        <label>When was your first round? (Month & Year)
+          <input type="month" name="firstRoundDate" id="firstRoundDate" />
         </label>
+
         <label>Short story (optional)
-          <textarea name="story" maxlength="2000" placeholder="A few lines about your first round..." ></textarea>
+          <textarea name="story" maxlength="2000" placeholder="A few lines about your first round..."></textarea>
         </label>
+
         <label>Photo (optional)
           <input type="file" name="photo" accept="image/*" />
         </label>
@@ -57,7 +63,17 @@
     </section>
   </main>
 
+  <!-- Countries list + month cap + submit handler -->
+  <script src="/countries.js"></script>
   <script>
+    // Limit the month picker to the current month
+    (function capMonth() {
+      const el = document.getElementById('firstRoundDate');
+      if (el) el.max = new Date().toISOString().slice(0, 7);
+    })();
+  </script>
+  <script>
+    // Form submit handler
     const form = document.getElementById('mfgc-form');
     const status = document.getElementById('status');
     form.addEventListener('submit', async (e) => {
