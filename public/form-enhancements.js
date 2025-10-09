@@ -26,7 +26,6 @@
   ];
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u2019]/g,"'").trim();
 
-  // Country autocomplete builder
   function buildCountryAutocomplete(inputId, listId) {
     const input = document.getElementById(inputId);
     const list  = document.getElementById(listId);
@@ -71,7 +70,6 @@
       else if (e.key==='Escape'){ close(); }
     });
 
-    // Valid ISO name only
     function validate() {
       const val = input.value.trim();
       const ok = ISO_COUNTRIES.some(n => norm(n) === norm(val));
@@ -80,55 +78,6 @@
     input.addEventListener('blur', validate);
 
     render([]);
-  }
-
-  // Month/Year dropdowns -> hidden YYYY-MM
-  function buildMonthYear() {
-    const monthInput = document.getElementById('firstRoundDate');
-    const form = document.getElementById('mfgc-form');
-    const yearSel  = document.getElementById('yearSelect');
-    const monthSel = document.getElementById('monthSelect');
-    if (!form || !monthInput || !yearSel || !monthSel) return;
-
-    const now = new Date();
-    const thisYear = now.getFullYear();
-
-    for (let y = thisYear; y >= 1900; y--) {
-      const o = document.createElement('option');
-      o.value = String(y); o.textContent = String(y);
-      yearSel.appendChild(o);
-    }
-    const months = [
-      ['01','January'],['02','February'],['03','March'],['04','April'],['05','May'],['06','June'],
-      ['07','July'],['08','August'],['09','September'],['10','October'],['11','November'],['12','December']
-    ];
-    months.forEach(([v, n]) => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = n;
-      monthSel.appendChild(o);
-    });
-
-    function capFuture() {
-      const currentMonth = now.getMonth() + 1;
-      Array.from(monthSel.options).forEach(opt => {
-        const m = parseInt(opt.value, 10);
-        opt.disabled = (parseInt(yearSel.value, 10) === thisYear && m > currentMonth);
-      });
-      if (monthSel.selectedOptions[0]?.disabled) {
-        for (let i = monthSel.options.length - 1; i >= 0; i--) {
-          if (!monthSel.options[i].disabled) { monthSel.value = monthSel.options[i].value; break; }
-        }
-      }
-    }
-    yearSel.addEventListener('change', capFuture);
-
-    yearSel.value  = String(thisYear);
-    monthSel.value = String(now.getMonth() + 1).padStart(2, '0');
-    capFuture();
-
-    form.addEventListener('submit', () => {
-      monthInput.value = `${yearSel.value}-${monthSel.value}`;
-    });
   }
 
   // Free client-side geocoding (Nominatim) with fallback
@@ -232,7 +181,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     buildCountryAutocomplete('country','country-suggestions');
     buildCountryAutocomplete('homeCountry','home-country-suggestions');
-    buildMonthYear();
     buildGeocoder();
     buildMiniPicker();
   });

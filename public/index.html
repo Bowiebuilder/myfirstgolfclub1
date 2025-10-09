@@ -52,91 +52,93 @@
   <!-- FORM -->
   <section class="card">
     <h2>Share your first-round story</h2>
-    <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data">
+
+    <!-- About You -->
+    <fieldset class="group">
+      <legend>About you</legend>
       <div class="grid">
         <label>First name
           <input name="firstName" required placeholder="Your first name" />
         </label>
-        <label>Last initial
-          <input name="lastInitial" maxlength="3" placeholder="First letter(s) of your surname (e.g., T)" />
+        <label>Surname initial
+          <input name="lastInitial" maxlength="3" placeholder="Letter(s) of your surname (e.g., T)" />
         </label>
       </div>
+      <label>Your home country (for your player-card flag)
+        <div class="field-relative">
+          <input name="homeCountry" id="homeCountry" autocomplete="off" required placeholder="Start typing a country…" />
+          <div id="home-country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
+        </div>
+      </label>
+    </fieldset>
 
+    <!-- How I got started -->
+    <fieldset class="group">
+      <legend>How I got started in golf</legend>
+      <div class="grid">
+        <label>Year I started playing golf
+          <input name="startedYear" id="startedYear" inputmode="numeric" pattern="\\d{4}" placeholder="YYYY (e.g., 2008)" />
+        </label>
+        <label>Age when I started
+          <input name="ageWhenStarted" type="number" min="3" max="100" placeholder="e.g., 12" />
+        </label>
+      </div>
+      <div class="grid">
+        <label>How I got into golf (optional)
+          <input name="howGotIntoGolf" placeholder="A friend invited me / Family / TV / Other…" />
+        </label>
+        <label>Dream golf course (optional)
+          <input name="dreamCourse" placeholder="e.g., St Andrews, Augusta National" />
+        </label>
+      </div>
+      <label>Favourite or worst golf moment (optional)
+        <textarea name="moment" maxlength="2000" placeholder="Tell us a highlight… or a horror shot!"></textarea>
+      </label>
+      <label>Earliest golf photo (optional)
+        <input type="file" name="photo" accept="image/*" />
+      </label>
+    </fieldset>
+
+    <!-- Course & Location -->
+    <fieldset class="group">
+      <legend>Course & location</legend>
       <div class="grid">
         <label>City where you played your first round
           <input name="city" placeholder="e.g., St Andrews, Nairobi, Melbourne" />
         </label>
-        <label>Country of the course (where you first played)
+        <label>Country of the course
           <div class="field-relative">
-            <input name="country" id="country" autocomplete="off" placeholder="Start typing a country…" required />
+            <input name="country" id="country" autocomplete="off" required placeholder="Start typing a country…" />
             <div id="country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
           </div>
         </label>
       </div>
-
-      <div class="grid">
-        <label>Your home country (for your player-card flag)
-          <div class="field-relative">
-            <input name="homeCountry" id="homeCountry" autocomplete="off" placeholder="Start typing a country…" required />
-            <div id="home-country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
-          </div>
-        </label>
-        <label>Dream golf course
-          <input name="dreamCourse" placeholder="e.g., St Andrews, Augusta National" />
-        </label>
-      </div>
-
-      <label>Golf club / course name where you played your first round
+      <label>Golf club / course name
         <input name="firstGolfClub" required placeholder="e.g., Royal Nairobi Golf Club" />
       </label>
 
-      <label>When was your first round? (Month & Year)</label>
-      <div class="grid">
-        <select id="yearSelect" class="ym-select" aria-label="Year"></select>
-        <select id="monthSelect" class="ym-select" aria-label="Month"></select>
-      </div>
-      <input type="hidden" name="firstRoundDate" id="firstRoundDate" />
-
-      <div class="grid">
-        <label>Age when you started
-          <input name="ageWhenStarted" type="number" min="3" max="100" placeholder="e.g., 12" />
-        </label>
-        <label>How did you get into golf? (optional)
-          <input name="howGotIntoGolf" placeholder="e.g., A friend invited me / Inspired by TV / Family tradition" />
-        </label>
-      </div>
-
-      <label>Short story (optional)
-        <textarea name="story" maxlength="2000" placeholder="Share a highlight or memory from that first round…"></textarea>
-      </label>
-
-      <label>Photo (optional)
-        <input type="file" name="photo" accept="image/*" />
-      </label>
-
-      <!-- Mini map picker (drag marker if geocode is off) -->
       <div class="mini-picker">
         <p class="map-subnote">If the dot is off, drag the marker to the exact course location.</p>
         <div id="picker-map"></div>
       </div>
 
-      <!-- Hidden: map coordinates -->
       <input type="hidden" name="lat" id="lat" />
       <input type="hidden" name="lng" id="lng" />
+    </fieldset>
 
-      <!-- Big inline consent checkbox -->
-      <div class="consent-row">
-        <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
-        <label for="consentMapPin" class="consent-label">
-          I’m happy for a pin to appear on the map for this submission.
-        </label>
-      </div>
+    <!-- Consent & submit -->
+    <div class="consent-row">
+      <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
+      <label for="consentMapPin" class="consent-label">
+        I’m happy for a pin to appear on the map for this submission.
+      </label>
+    </div>
 
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAAB5r0dz4fZGQZB2z"></div>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAAB5r0dz4fZGQZB2z"></div>
 
-      <button type="submit" class="btn">Submit</button>
-      <p id="status" class="status"></p>
-    </form>
+    <button type="submit" class="btn">Submit</button>
+    <p id="status" class="status"></p>
+    <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data"></form>
   </section>
 
   <!-- Leaflet JS + Clustering -->

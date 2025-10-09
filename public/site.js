@@ -1,5 +1,4 @@
 (function () {
-  // Country -> ISO code mapping (for emoji flags)
   const COUNTRY_TO_CODE = {
 "Afghanistan":"AF","Albania":"AL","Algeria":"DZ","Andorra":"AD","Angola":"AO","Antigua and Barbuda":"AG","Argentina":"AR","Armenia":"AM","Australia":"AU","Austria":"AT","Azerbaijan":"AZ",
 "Bahamas":"BS","Bahrain":"BH","Bangladesh":"BD","Barbados":"BB","Belarus":"BY","Belgium":"BE","Belize":"BZ","Benin":"BJ","Bhutan":"BT","Bolivia":"BO","Bosnia and Herzegovina":"BA","Botswana":"BW","Brazil":"BR","Brunei":"BN","Bulgaria":"BG","Burkina Faso":"BF","Burundi":"BI",
@@ -34,21 +33,18 @@
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
                                 .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 
-  // Map + cluster
   const mapEl = document.getElementById('map');
   if (!mapEl) return;
 
   const map = L.map('map', { scrollWheelZoom: true, worldCopyJump: true });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    attribution: '&copy; OpenStreetMap'
   }).addTo(map);
   map.setView([20, 0], 2);
 
   const cluster = L.markerClusterGroup();
   map.addLayer(cluster);
 
-  // Fetch + render
   fetch('/api/submissions', { headers: { 'Accept': 'application/json' } })
     .then(r => r.ok ? r.json() : [])
     .then(rows => {
@@ -69,11 +65,15 @@
       const flag = item.homeCountry ? toFlag(item.homeCountry) : '';
       const loc  = [item.city, item.country].filter(Boolean).join(', ');
       const club = item.firstGolfClub ? esc(item.firstGolfClub) : '';
-      const date = item.firstRoundDate ? esc(item.firstRoundDate) : '';
+      const year = item.startedYear ? esc(item.startedYear) : (item.firstRoundDate ? esc(item.firstRoundDate) : '');
       const age  = item.ageWhenStarted ? `Started at ${esc(item.ageWhenStarted)}` : '';
       const dream= item.dreamCourse ? `Dream: ${esc(item.dreamCourse)}` : '';
       const how  = item.howGotIntoGolf ? esc(item.howGotIntoGolf) : '';
       const story= item.story ? esc(item.story) : '';
+
+      const firstLine = club
+        ? `<div class="pc-row"><span>First round:</span> ${club}${year ? ` (${year})` : ''}</div>`
+        : (year ? `<div class="pc-row"><span>Started:</span> ${year}</div>` : '');
 
       const popupHTML = `
         <div class="player-card">
@@ -85,7 +85,7 @@
             </div>
           </div>
           <div class="pc-body">
-            ${club ? `<div class="pc-row"><span>First round:</span> ${club}${date ? ` (${date})` : ''}</div>` : ''}
+            ${firstLine}
             ${age ? `<div class="pc-row">${age}</div>` : ''}
             ${dream ? `<div class="pc-row">${dream}</div>` : ''}
             ${how ? `<div class="pc-note">“${how}”</div>` : ''}
