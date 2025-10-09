@@ -1,5 +1,5 @@
 (function () {
-  // -------- ISO 3166 country names --------
+  // --- ISO 3166 country list ---
   const ISO_COUNTRIES = [
     "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan",
     "Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi",
@@ -31,7 +31,7 @@
     .replace(/[\u2019]/g, "'")
     .trim();
 
-  // -------- Country autocomplete (text input + dropdown) --------
+  // --- Country autocomplete (text input + dropdown) ---
   function buildCountryAutocomplete() {
     const input = document.getElementById('country');
     const list  = document.getElementById('country-suggestions');
@@ -127,7 +127,7 @@
     render([]);
   }
 
-  // -------- Year/Month dropdowns (write YYYY-MM to hidden field) --------
+  // --- Month/Year dropdowns -> hidden YYYY-MM ---
   function buildMonthYear() {
     const monthInput = document.getElementById('firstRoundDate');
     const form = document.getElementById('mfgc-form');
@@ -138,13 +138,11 @@
     const now = new Date();
     const thisYear = now.getFullYear();
 
-    // Years: current -> 1900
     for (let y = thisYear; y >= 1900; y--) {
       const o = document.createElement('option');
       o.value = String(y); o.textContent = String(y);
       yearSel.appendChild(o);
     }
-    // Months: names
     const months = [
       ['01','January'],['02','February'],['03','March'],['04','April'],['05','May'],['06','June'],
       ['07','July'],['08','August'],['09','September'],['10','October'],['11','November'],['12','December']
@@ -155,7 +153,6 @@
       monthSel.appendChild(o);
     });
 
-    // Cap future months for current year
     function capFuture() {
       const currentMonth = now.getMonth() + 1;
       Array.from(monthSel.options).forEach(opt => {
@@ -170,19 +167,82 @@
     }
     yearSel.addEventListener('change', capFuture);
 
-    // Defaults
     yearSel.value  = String(thisYear);
     monthSel.value = String(now.getMonth() + 1).padStart(2, '0');
     capFuture();
 
-    // On submit, write YYYY-MM
     form.addEventListener('submit', () => {
       monthInput.value = `${yearSel.value}-${monthSel.value}`;
+    });
+  }
+
+  // --- Geocoding with fallback (club+city+country → city+country → country) ---
+  function buildGeocoder() {
+    const form = document.getElementById('mfgc-form');
+    if (!form) return;
+
+    const clubEl    = form.querySelector('input[name="firstGolfClub"]');
+    const cityEl    = form.querySelector('input[name="city"]');
+    const countryEl = form.querySelector('input[name="country"]');
+    const latEl     = form.querySelector('input[name="lat"]');
+    const lngEl     = form.querySelector('input[name="lng"]');
+    const statusEl  = document.getElementById('status');
+
+    async function geocodeQuery(q) {
+      if (!q) return null;
+      const url = new URL('https://nominatim.openstreetmap.org/search');
+      url.searchParams.set('q', q);
+      url.searchParams.set('format', 'json');
+      url.searchParams.set('limit', '1');
+      try {
+        const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) return null;
+        const json = await res.json();
+        if (!Array.isArray(json) || json.length === 0) return null;
+        const { lat, lon } = json[0];
+        return { lat: parseFloat(lat), lng: parseFloat(lon) };
+      } catch { return null; }
+    }
+
+    async function geocodeWithFallback() {
+      const full = [clubEl?.value, cityEl?.value, countryEl?.value].filter(Boolean).join(', ').trim();
+      const city = [cityEl?.value, countryEl?.value].filter(Boolean).join(', ').trim();
+      const only = (countryEl?.value || '').trim();
+
+      let result = await geocodeQuery(full);
+      if (result) return result;
+
+      result = await geocodeQuery(city);
+      if (result) return result;
+
+      result = await geocodeQuery(only);
+      if (result) return result;
+
+      return null;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      if (!latEl?.value || !lngEl?.value) {
+        try {
+          statusEl && (statusEl.textContent = 'Locating course…');
+          const coords = await geocodeWithFallback();
+          if (coords) { latEl.value = String(coords.lat); lngEl.value = String(coords.lng); }
+        } finally {
+          statusEl && (statusEl.textContent = '');
+        }
+      }
+    });
+
+    countryEl?.addEventListener('blur', async () => {
+      if (latEl?.value && lngEl?.value) return;
+      const coords = await geocodeWithFallback();
+      if (coords) { latEl.value = String(coords.lat); lngEl.value = String(coords.lng); }
     });
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     buildCountryAutocomplete();
     buildMonthYear();
+    buildGeocoder();
   });
 })();

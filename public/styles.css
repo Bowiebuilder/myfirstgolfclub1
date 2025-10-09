@@ -64,3 +64,48 @@ input, textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px s
 
 /* --- Year/Month dropdowns tidy --- */
 .ym-select { margin-right: 8px; }
+
+/* Layout */
+.site-header { max-width: 1100px; margin: 1.5rem auto 1rem; padding: 0 1rem; }
+.card { max-width: 1100px; margin: 1rem auto; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.card.wide { max-width: 1400px; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+@media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
+.btn { display:inline-block; padding: 8px 14px; border-radius: 10px; border:1px solid #0f172a; text-decoration:none; }
+.status { margin-top: 8px; min-height: 1em; color: #0f172a; }
+
+/* Map */
+#map { height: 68vh; min-height: 420px; border-radius: 12px; border: 1px solid #e5e7eb; }
+
+/* Stats */
+.stats-grid { display:grid; gap:16px; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.stat { padding: 14px; border:1px solid #e5e7eb; border-radius: 12px; background:#fafafa; }
+.stat-label { font-size: 0.9rem; color:#6b7280; }
+.stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 6px; }
+
+/* Autocomplete */
+.field-relative { position: relative; }
+.ac-list {
+  position: absolute; top: 100%; left: 0; z-index: 20;
+  display: none; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  margin-top: 4px; max-height: 240px; overflow: auto; box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+  min-width: 100%;
+}
+.ac-item { padding: 8px 10px; cursor: pointer; }
+.ac-item:hover, .ac-item.active { background: #f3f4f6; }
+
+/* Player card (popup) */
+.leaflet-popup-content { margin: 10px 10px 14px; }
+.player-card { max-width: 320px; }
+.pc-header { display:flex; gap:10px; align-items:center; margin-bottom: 6px; }
+.pc-avatar { width:36px; height:36px; border-radius:50%; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.pc-name { font-weight: 700; }
+.pc-meta { font-size: 0.85rem; color:#6b7280; }
+.pc-body { display:flex; flex-direction:column; gap:6px; }
+.pc-row span { color:#6b7280; margin-right:4px; }
+.pc-note { background:#f8fafc; border:1px solid #e5e7eb; padding:8px; border-radius:10px; }
+.pc-note.small { font-size: 0.9rem; }
+
+/* Month/Year selects */
+.ym-select { margin-right: 8px; }
+.checkbox { margin: 10px 0; }
