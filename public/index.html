@@ -25,6 +25,12 @@
     <p>Explore where golfers around the world played their first full round — and add your story.</p>
   </header>
 
+  <!-- Success Banner -->
+  <div id="success-banner" class="hidden banner">
+    <span>✅ Your story was added! Your pin is now on the map.</span>
+    <button id="banner-close" aria-label="Close">&times;</button>
+  </div>
+
   <!-- MAP -->
   <section id="map-section" class="card wide">
     <div id="map"></div>
@@ -78,9 +84,7 @@
         <legend>How I got started in golf</legend>
         <div class="grid">
           <label>Year I started playing golf
-            <select name="startedYear" id="startedYear" class="ym-select" required>
-              <option value="">YYYY (e.g., 2008)</option>
-            </select>
+            <select name="startedYear" id="startedYear" required></select>
           </label>
           <label>Age when I started
             <input name="ageWhenStarted" type="number" min="3" max="100" placeholder="e.g., 12" />
@@ -155,19 +159,5 @@
   <!-- App logic -->
   <script src="/site.js"></script>
   <script src="/form-enhancements.js"></script>
-  <script>
-    // Populate Year dropdown
-    (function () {
-      const sel = document.getElementById('startedYear');
-      if (!sel) return;
-      const max = new Date().getFullYear() + 1;
-      for (let y = max; y >= 1900; y--) {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y;
-        sel.appendChild(opt);
-      }
-    })();
-  </script>
 </body>
 </html>
