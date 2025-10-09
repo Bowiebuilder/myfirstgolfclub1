@@ -13,3 +13,54 @@ input, textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px s
 .map-container { height: 100vh; display: grid; grid-template-rows: auto 1fr; }
 .map-header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; background: var(--card); border-bottom: 1px solid rgba(255,255,255,0.08); }
 .map { height: 100%; }
+/* --- Country autocomplete dropdown --- */
+.field-relative { position: relative; }
+.ac-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  display: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-top: 0.25rem;
+  max-height: 220px;
+  overflow: auto;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  min-width: 100%;
+}
+.ac-item {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.ac-item:hover,
+.ac-item.active {
+  background: #f3f4f6;
+}
+
+/* --- Year/Month selects tidy --- */
+.ym-select { margin-right: 8px; }
+
+/* --- Country autocomplete dropdown --- */
+.field-relative { position: relative; }
+.ac-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  display: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-top: 0.25rem;
+  max-height: 220px;
+  overflow: auto;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  min-width: 100%;
+}
+.ac-item { padding: 8px 10px; cursor: pointer; }
+.ac-item:hover, .ac-item.active { background: #f3f4f6; }
+
+/* --- Year/Month dropdowns tidy --- */
+.ym-select { margin-right: 8px; }

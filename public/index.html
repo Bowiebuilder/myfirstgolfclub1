@@ -32,9 +32,10 @@
             <input name="city" />
           </label>
           <label>Country
-           <input id="countryFilter" placeholder="Type to filter…" autocomplete="off" />
-           <select id="countrySelect" size="6" aria-label="Country options"></select>
-           <input type="hidden" name="country" id="country" required />
+            <div class="field-relative">
+              <input name="country" id="country" autocomplete="off" placeholder="Start typing…" required />
+              <div id="country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
+            </div>
           </label>
         </div>
 
@@ -42,9 +43,12 @@
           <input name="firstGolfClub" required />
         </label>
 
-        <label>When was your first round? (Month & Year)
-          <input type="month" name="firstRoundDate" id="firstRoundDate" />
-        </label>
+        <label>When was your first round? (Month & Year)</label>
+        <div class="grid">
+          <select id="yearSelect" class="ym-select" aria-label="Year"></select>
+          <select id="monthSelect" class="ym-select" aria-label="Month"></select>
+        </div>
+        <input type="hidden" name="firstRoundDate" id="firstRoundDate" />
 
         <label>Short story (optional)
           <textarea name="story" maxlength="2000" placeholder="A few lines about your first round..."></textarea>
@@ -64,11 +68,11 @@
     </section>
   </main>
 
-  <!-- Country picker + month/year enhancements -->
+  <!-- Country autocomplete + Year/Month dropdowns -->
   <script src="/form-enhancements.js"></script>
 
+  <!-- Form submit handler -->
   <script>
-    // Form submit handler
     const form = document.getElementById('mfgc-form');
     const status = document.getElementById('status');
     form.addEventListener('submit', async (e) => {
@@ -87,5 +91,3 @@
   </script>
 </body>
 </html>
-
-
