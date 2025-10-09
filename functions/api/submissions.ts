@@ -6,12 +6,12 @@
 export const onRequestGet: PagesFunction = async ({ env }) => {
   const db = env.DB as D1Database;
   const { results } = await db
-    .prepare(`SELECT id, firstName, lastInitial, city, country, firstGolfClub, firstRoundDate,
+    .prepare(`SELECT id, firstName, lastInitial, city, country, homeCountry, firstGolfClub, firstRoundDate,
                      ageWhenStarted, dreamCourse, howGotIntoGolf, story, lat, lng, created_at
               FROM submissions
               WHERE approved = 1
               ORDER BY created_at DESC
-              LIMIT 1000`)
+              LIMIT 2000`)
     .all();
 
   return new Response(JSON.stringify(results ?? []), {
@@ -42,13 +42,14 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
       return new Response(JSON.stringify({ error: "Turnstile verification failed" }), { status: 400 });
     }
 
-    // --- Read fields (strings only) ---
+    // --- Fields ---
     const s = (k: string) => (form.get(k)?.toString() ?? "").trim();
 
     const firstName       = s("firstName");
     const lastInitial     = s("lastInitial");
     const city            = s("city");
-    const country         = s("country");
+    const country         = s("country");       // course location country
+    const homeCountry     = s("homeCountry");   // user's home country (flag)
     const firstGolfClub   = s("firstGolfClub");
     const firstRoundDate  = s("firstRoundDate"); // YYYY-MM
     const ageWhenStarted  = s("ageWhenStarted");
@@ -59,12 +60,18 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     const lngStr          = s("lng");
     const consentMapPin   = s("consentMapPin"); // "on" if checked
 
-    // Minimal validation
+    // Basic validation
     if (!firstName || !country || !firstGolfClub) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
     }
     if (consentMapPin !== "on") {
       return new Response(JSON.stringify({ error: "Consent required for map pin" }), { status: 400 });
+    }
+    if (firstRoundDate && !/^\d{4}-\d{2}$/.test(firstRoundDate)) {
+      return new Response(JSON.stringify({ error: "Invalid date format (YYYY-MM)" }), { status: 400 });
+    }
+    if (ageWhenStarted && !/^\d{1,3}$/.test(ageWhenStarted)) {
+      return new Response(JSON.stringify({ error: "Invalid age" }), { status: 400 });
     }
 
     const lat = Number(latStr);
@@ -72,16 +79,16 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     const latSafe = Number.isFinite(lat) ? lat : null;
     const lngSafe = Number.isFinite(lng) ? lng : null;
 
-    // --- Insert (AUTO-APPROVE = 1) ---
+    // Insert (auto-approve)
     const stmt = db.prepare(`
       INSERT INTO submissions
-      (firstName, lastInitial, city, country, firstGolfClub, firstRoundDate,
+      (firstName, lastInitial, city, country, homeCountry, firstGolfClub, firstRoundDate,
        ageWhenStarted, dreamCourse, howGotIntoGolf, story, lat, lng, approved, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
     `);
 
     await stmt.bind(
-      firstName, lastInitial, city, country, firstGolfClub, firstRoundDate,
+      firstName, lastInitial, city, country, homeCountry || null, firstGolfClub, firstRoundDate || null,
       ageWhenStarted || null, dreamCourse || null, howGotIntoGolf || null, story || null,
       latSafe, lngSafe
     ).run();

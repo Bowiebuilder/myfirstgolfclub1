@@ -1,5 +1,4 @@
 (function () {
-  // --- ISO 3166 country list ---
   const ISO_COUNTRIES = [
     "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan",
     "Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi",
@@ -25,89 +24,54 @@
     "Vanuatu","Vatican City","Venezuela","Vietnam",
     "Yemen","Zambia","Zimbabwe"
   ];
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u2019]/g,"'").trim();
 
-  const norm = s => s.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\u2019]/g, "'")
-    .trim();
-
-  // --- Country autocomplete (text input + dropdown) ---
-  function buildCountryAutocomplete() {
-    const input = document.getElementById('country');
-    const list  = document.getElementById('country-suggestions');
+  // Country autocomplete builder
+  function buildCountryAutocomplete(inputId, listId) {
+    const input = document.getElementById(inputId);
+    const list  = document.getElementById(listId);
     if (!input || !list) return;
 
     let currentIndex = -1;
 
-    function optionsFor(q) {
+    function optionsFor(q){
       if (!q) return ISO_COUNTRIES.slice(0, 50);
       const nq = norm(q);
-      const starts = [], contains = [];
+      const starts=[], contains=[];
       for (const name of ISO_COUNTRIES) {
         const n = norm(name);
         if (n.startsWith(nq)) starts.push(name);
         else if (n.includes(nq)) contains.push(name);
       }
-      return starts.concat(contains);
+      return starts.concat(contains).slice(0, 12);
     }
-
-    function render(names) {
-      list.innerHTML = "";
-      currentIndex = -1;
-      names.slice(0, 12).forEach((name) => {
+    function render(names){
+      list.innerHTML = ""; currentIndex = -1;
+      names.forEach(name => {
         const div = document.createElement('div');
         div.className = 'ac-item';
-        div.setAttribute('role', 'option');
+        div.setAttribute('role','option');
         div.textContent = name;
-        div.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          input.value = name;
-          close();
+        div.addEventListener('mousedown', e => {
+          e.preventDefault(); input.value = name; close();
         });
         list.appendChild(div);
       });
       list.style.display = names.length ? 'block' : 'none';
       list.style.minWidth = input.offsetWidth + 'px';
     }
-
-    function highlight() {
+    function close(){ list.style.display='none'; currentIndex=-1; }
+    input.addEventListener('input', ()=> render(optionsFor(input.value)));
+    document.addEventListener('click', e=>{ if (e.target!==input && !list.contains(e.target)) close(); });
+    input.addEventListener('keydown', e=>{
       const items = list.querySelectorAll('.ac-item');
-      items.forEach((el, i) => {
-        el.classList.toggle('active', i === currentIndex);
-        el.setAttribute('aria-selected', i === currentIndex ? 'true' : 'false');
-        if (i === currentIndex) el.scrollIntoView({ block: 'nearest' });
-      });
-    }
-
-    function close() { list.style.display = 'none'; currentIndex = -1; }
-
-    input.addEventListener('input', () => render(optionsFor(input.value)));
-    document.addEventListener('click', (e) => {
-      if (e.target !== input && !list.contains(e.target)) close();
+      if (e.key==='ArrowDown'){ e.preventDefault(); if(!items.length) return; currentIndex=(currentIndex+1)%items.length; items.forEach((el,i)=>el.classList.toggle('active',i===currentIndex)); }
+      else if (e.key==='ArrowUp'){ e.preventDefault(); if(!items.length) return; currentIndex=(currentIndex-1+items.length)%items.length; items.forEach((el,i)=>el.classList.toggle('active',i===currentIndex)); }
+      else if (e.key==='Enter'){ if (list.style.display==='block' && currentIndex>=0){ e.preventDefault(); input.value = items[currentIndex].textContent || input.value; close(); } }
+      else if (e.key==='Escape'){ close(); }
     });
 
-    input.addEventListener('keydown', (e) => {
-      const items = list.querySelectorAll('.ac-item');
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (!items.length) return;
-        currentIndex = (currentIndex + 1) % items.length; highlight();
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (!items.length) return;
-        currentIndex = (currentIndex - 1 + items.length) % items.length; highlight();
-      } else if (e.key === 'Enter') {
-        if (list.style.display === 'block' && currentIndex >= 0) {
-          e.preventDefault();
-          input.value = items[currentIndex].textContent || input.value;
-          close();
-        }
-      } else if (e.key === 'Escape') {
-        close();
-      }
-    });
-
-    // Only allow valid ISO names
+    // Valid ISO name only
     function validate() {
       const val = input.value.trim();
       const ok = ISO_COUNTRIES.some(n => norm(n) === norm(val));
@@ -115,19 +79,10 @@
     }
     input.addEventListener('blur', validate);
 
-    const form = document.getElementById('mfgc-form');
-    if (form) form.addEventListener('submit', (e) => {
-      validate();
-      if (!form.checkValidity()) {
-        e.preventDefault();
-        input.reportValidity();
-      }
-    });
-
     render([]);
   }
 
-  // --- Month/Year dropdowns -> hidden YYYY-MM ---
+  // Month/Year dropdowns -> hidden YYYY-MM
   function buildMonthYear() {
     const monthInput = document.getElementById('firstRoundDate');
     const form = document.getElementById('mfgc-form');
@@ -176,7 +131,7 @@
     });
   }
 
-  // --- Geocoding with fallback (club+city+country → city+country → country) ---
+  // Free client-side geocoding (Nominatim) with fallback
   function buildGeocoder() {
     const form = document.getElementById('mfgc-form');
     if (!form) return;
@@ -240,9 +195,45 @@
     });
   }
 
+  // Mini picker map
+  function buildMiniPicker() {
+    const pickerEl = document.getElementById('picker-map');
+    const latEl = document.getElementById('lat');
+    const lngEl = document.getElementById('lng');
+    if (!pickerEl || !latEl || !lngEl) return;
+
+    const map = L.map('picker-map', { attributionControl: false, zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const start = [20, 0];
+    map.setView(start, 2);
+
+    const marker = L.marker(start, { draggable: true }).addTo(map);
+    marker.on('dragend', () => {
+      const p = marker.getLatLng();
+      latEl.value = String(p.lat.toFixed(6));
+      lngEl.value = String(p.lng.toFixed(6));
+    });
+
+    function tryCenter() {
+      const lat = Number(latEl.value), lng = Number(lngEl.value);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        map.setView([lat, lng], 13);
+        marker.setLatLng([lat, lng]);
+      }
+    }
+    setTimeout(tryCenter, 800);
+    ['input','change'].forEach(ev=>{
+      latEl.addEventListener(ev, tryCenter);
+      lngEl.addEventListener(ev, tryCenter);
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
-    buildCountryAutocomplete();
+    buildCountryAutocomplete('country','country-suggestions');
+    buildCountryAutocomplete('homeCountry','home-country-suggestions');
     buildMonthYear();
     buildGeocoder();
+    buildMiniPicker();
   });
 })();
