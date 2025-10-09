@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My First Golf Club</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+  <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>My First Golf Club</h1>
+      <p>Share the course where you played your first round and explore the global map of golfing firsts.</p>
+      <a class="btn" href="/map.html">View the map</a>
+    </header>
+
+    <section class="card">
+      <h2>Submit your story</h2>
+      <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data">
+        <div class="grid">
+          <label>First name
+            <input name="firstName" required />
+          </label>
+          <label>Last initial
+            <input name="lastInitial" maxlength="3" />
+          </label>
+        </div>
+        <div class="grid">
+          <label>City
+            <input name="city" />
+          </label>
+          <label>Country
+            <input name="country" required />
+          </label>
+        </div>
+        <label>Golf club / course name
+          <input name="firstGolfClub" required />
+        </label>
+        <label>When was your first round? (YYYY-MM)
+          <input name="firstRoundDate" placeholder="2021-07" pattern="^\d{4}-\d{2}$" />
+        </label>
+        <label>Short story (optional)
+          <textarea name="story" maxlength="2000" placeholder="A few lines about your first round..." ></textarea>
+        </label>
+        <label>Photo (optional)
+          <input type="file" name="photo" accept="image/*" />
+        </label>
+
+        <input type="hidden" name="lat" id="lat" />
+        <input type="hidden" name="lng" id="lng" />
+
+        <div class="cf-turnstile" data-sitekey="REPLACE_WITH_TURNSTILE_SITE_KEY"></div>
+        <button type="submit" class="btn">Submit</button>
+        <p id="status" class="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('mfgc-form');
+    const status = document.getElementById('status');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = 'Submitting...';
+      try {
+        const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Submission failed');
+        status.textContent = 'Thanks! Your story is awaiting approval.';
+        form.reset();
+      } catch (err) {
+        status.textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

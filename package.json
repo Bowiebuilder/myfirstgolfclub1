@@ -1,0 +1,14 @@
+{
+  "name": "myfirstgolfclub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev --local true",
+    "deploy": "wrangler pages deploy ./public",
+    "d1:apply": "wrangler d1 execute mfgc-db --file=./migrations/001_init.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

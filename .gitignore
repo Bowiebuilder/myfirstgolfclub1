@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Local env
+.env
+.env.*
+
+# Builds
+dist/
+.build/
+.worker/
+.vscode/
+.DS_Store

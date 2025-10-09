@@ -1,0 +1,20 @@
+name = "myfirstgolfclub"
+compatibility_date = "2024-11-01"
+
+[vars]
+# Replace at deploy time in Cloudflare dashboard
+TURNSTILE_SITE_KEY = "REPLACE_IN_DASHBOARD"
+TURNSTILE_SECRET_KEY = "REPLACE_IN_DASHBOARD"
+ADMIN_API_KEY = "REPLACE_IN_DASHBOARD"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mfgc-db"
+database_id = "REPLACE_WITH_D1_ID"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "mfgc-uploads"
+
+[observability]
+enabled = true
