@@ -32,8 +32,9 @@
             <input name="city" />
           </label>
           <label>Country
-            <input name="country" id="country" list="countries" required placeholder="Start typing…" />
-            <datalist id="countries"></datalist>
+           <input id="countryFilter" placeholder="Type to filter…" autocomplete="off" />
+           <select id="countrySelect" size="6" aria-label="Country options"></select>
+           <input type="hidden" name="country" id="country" required />
           </label>
         </div>
 
@@ -63,15 +64,9 @@
     </section>
   </main>
 
-  <!-- Countries list + month cap + submit handler -->
-  <script src="/countries.js"></script>
-  <script>
-    // Limit the month picker to the current month
-    (function capMonth() {
-      const el = document.getElementById('firstRoundDate');
-      if (el) el.max = new Date().toISOString().slice(0, 7);
-    })();
-  </script>
+  <!-- Country picker + month/year enhancements -->
+  <script src="/form-enhancements.js"></script>
+
   <script>
     // Form submit handler
     const form = document.getElementById('mfgc-form');
@@ -92,3 +87,5 @@
   </script>
 </body>
 </html>
+
+
