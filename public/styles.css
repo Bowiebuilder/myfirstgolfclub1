@@ -1,27 +1,142 @@
-body { font-family: Arial, sans-serif; background: #fff; color: #222; margin:0; }
-h1,h2,h3,label { color:#111; }
-input,select,textarea { color:#111; background:#fafafa; border:1px solid #ccc; padding:6px; border-radius:4px; width:100%; }
-button.btn { background:#007bff; color:#fff; border:none; padding:10px 16px; border-radius:4px; cursor:pointer; }
-button.btn:hover { background:#0056b3; }
+:root{
+  --page-max: 1100px;
+  --page-max-wide: 1400px;
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --subtle: #374151;
+  --border: #e5e7eb;
+  --border-strong: #cbd5e1;
+  --focus: #4f46e5;
+  --btn-bg: #111827;
+  --btn-bg-hover:#0b1220;
+  --btn-text:#ffffff;
+}
+
+*{box-sizing:border-box}
+
+html,body{height:100%}
+body{
+  margin:0;
+  font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Page gutters / centered content */
+.page{ max-width: var(--page-max); margin: 0 auto; padding: 0 16px 24px; }
+
+/* Header */
+.site-header{ padding: 24px 0 6px; }
+.site-header h1{ margin:0 0 4px; font-size: 2rem; }
+.site-header p{ margin:6px 0 0; color:#475569 }
+
+/* Cards */
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 14px 0;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+}
+.card.wide{ max-width: var(--page-max-wide); margin-left: auto; margin-right: auto; }
 
 /* Map */
-#map { height: 400px; }
-.mini-picker { height: 200px; margin-top:10px; }
+#map{ height: 68vh; min-height: 420px; border:1px solid var(--border); border-radius:12px; }
+.mini-picker{ margin-top:10px; }
+#picker-map{ height: 240px; border:1px solid var(--border); border-radius: 10px; }
 
-/* Banner */
-.banner {
+/* Stats */
+.stats-grid{ display:grid; gap:16px; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.stat{ padding:14px; border:1px solid var(--border); border-radius:12px; background:#fafafa; }
+.stat-label{ font-size:.9rem; color:#6b7280; }
+.stat-value{ font-size:1.6rem; font-weight:700; margin-top:6px; }
+
+/* Form layout */
+.group{ border:0; padding:0; margin:0; }
+.group legend{ font-weight:700; margin-bottom:8px; }
+.grid{ display:grid; gap:12px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+@media (max-width: 720px){ .grid{ grid-template-columns:1fr; } }
+
+label{ color: var(--subtle); font-weight:600; display:block; margin-bottom:2px; }
+
+/* Inputs */
+input, select, textarea{
+  width:100%;
+  padding:10px 12px;
+  border:1.5px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+  color: var(--text);
+  outline:none;
+}
+textarea{ min-height: 110px; resize: vertical; }
+
+input:focus, select:focus, textarea:focus{
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.18);
+}
+
+/* Buttons */
+.btn{
+  display:inline-block;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border:1px solid var(--btn-bg);
+  border-radius:10px;
+  font-weight:600;
+  padding:10px 16px;
+  cursor:pointer;
+}
+.btn:hover{ background: var(--btn-bg-hover); }
+
+/* Status text */
+.status{ margin-top:8px; min-height:1em; color: var(--text); font-weight:600; }
+
+/* Autocomplete dropdown */
+.field-relative{ position:relative; }
+.ac-list{
+  position:absolute; top:100%; left:0; z-index:30;
+  display:none; min-width:100%;
+  background:#fff; border:1px solid var(--border); border-radius:12px;
+  margin-top:4px; max-height:260px; overflow:auto;
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
+}
+.ac-item{ padding:8px 10px; cursor:pointer; }
+.ac-item:hover, .ac-item.active{ background:#eef2ff; }
+
+/* Consent checkbox (big & outlined) */
+.consent-row{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border:1.5px solid var(--border-strong);
+  border-radius:12px; background:#fff; margin:10px 0 14px 0;
+}
+.consent-row input[type="checkbox"]{
+  width:22px; height:22px; accent-color: var(--focus);
+  border:2px solid var(--border-strong); border-radius:4px;
+}
+.consent-label{ color: var(--text); font-weight:700; }
+
+/* Leaflet popup card */
+.popup-card{ max-width:320px; }
+.leaflet-popup-content{ margin:10px 10px 14px; }
+
+/* Success banner */
+.banner{
   position: fixed;
   top: 10px; left: 50%;
   transform: translateX(-50%);
-  background: #28a745; color: #fff;
-  padding: 12px 20px; border-radius: 6px;
-  display: flex; align-items: center; gap: 12px;
-  font-size: 1rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  background: #22c55e; color:#fff;
+  padding: 12px 16px; border-radius: 10px;
+  display:flex; align-items:center; gap:12px;
+  font-weight:600;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
   z-index: 2000;
 }
-.banner button {
-  background:none; border:none; color:#fff;
-  font-size:1.2rem; cursor:pointer;
-}
-.hidden { display:none!important; }
+.banner button{ background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer; }
+.hidden{ display:none !important; }
+
+/* Links */
+a{ color:#1d4ed8; font-weight:600; }
+a:hover{ text-decoration:underline; }
