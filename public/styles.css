@@ -2,7 +2,6 @@ body {
   font-family: Arial, sans-serif;
   background: #f9fafb;
   margin: 0;
-  padding: 0;
   color: #111;
 }
 .site-header {
@@ -10,6 +9,10 @@ body {
   padding: 2rem;
   background: #044d29;
   color: #fff;
+}
+#map {
+  width: 100%;
+  height: 400px;
 }
 .card {
   max-width: 700px;
@@ -40,11 +43,7 @@ button {
 button:hover {
   background: #06663a;
 }
-.subtext {
-  font-style: italic;
-  margin-bottom: 10px;
-  color: #555;
-}
+.subtext { font-style: italic; margin-bottom: 10px; color: #555; }
 .ac-list {
   position: absolute;
   background: #fff;
@@ -58,4 +57,24 @@ button:hover {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.mapboxgl-popup {
+  max-width: 300px;
+  font: 14px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+.player-card {
+  padding: 10px;
+}
+.player-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+.player-card img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.player-card .meta {
+  font-size: 0.9rem;
+  color: #555;
 }

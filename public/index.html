@@ -6,12 +6,21 @@
   <title>My First Golf Club</title>
   <link rel="stylesheet" href="/styles.css" />
   <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>
+  <link
+    href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+    rel="stylesheet"
+  />
 </head>
 <body>
   <header class="site-header">
     <h1>Where did your golf journey begin?</h1>
     <p>Share your first-round story and join golfers from around the world on our interactive map.</p>
   </header>
+
+  <!-- MAP -->
+  <section id="map-section" class="card wide">
+    <div id="map"></div>
+  </section>
 
   <!-- FORM -->
   <section class="card">
@@ -20,7 +29,7 @@
       <label>Name (First + Surname initial)
         <input name="firstName" required placeholder="e.g. John M" />
       </label>
-      <label>Home country (flag shown on your card)
+      <label>Home country
         <input name="homeCountry" id="homeCountry" placeholder="Start typing your country…" />
         <div id="home-country-suggestions" class="ac-list" style="display:none"></div>
       </label>
@@ -39,11 +48,11 @@
     </label>
 
     <label>Location where you started
-      <input name="startLocation" id="startLocation" required placeholder="City, Area, Golf Club…" />
+      <input name="startLocation" id="startLocation" required placeholder="Start typing golf club, area, or address…" />
       <div id="course-suggestions" class="ac-list" style="display:none"></div>
     </label>
 
-    <label>Resolved address (auto)
+    <label>Address of location
       <input id="resolved-address" name="resolvedAddress" readonly placeholder="Will appear after lookup…" />
     </label>
 
@@ -62,6 +71,10 @@
       <div id="dream-suggestions" class="ac-list" style="display:none"></div>
     </label>
 
+    <label>Earliest golf photo (optional)
+      <input type="file" name="photo" accept="image/*" />
+    </label>
+
     <div class="consent-row">
       <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
       <label for="consentMapPin" class="consent-label">
@@ -75,6 +88,8 @@
     </form>
   </section>
 
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="/form-enhancements.js"></script>
+  <script src="/site.js"></script>
 </body>
 </html>
