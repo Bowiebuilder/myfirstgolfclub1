@@ -27,144 +27,178 @@
     "Zambia","Zimbabwe"
   ];
 
+  /* ===== Autocomplete (country fields) ===== */
   function buildCountryAutocomplete(inputId, listId){
     const input = document.getElementById(inputId);
     const list  = document.getElementById(listId);
     if (!input || !list) return;
 
-    let active = -1;
-    function render(items){
-      list.innerHTML = items.map((n,i)=>`<div class="ac-item" data-i="${i}" role="option">${n}</div>`).join('');
-      list.style.display = items.length ? 'block' : 'none';
-      active = -1;
+    function render(){
+      const q = (input.value || "").trim().toLowerCase();
+      const items = ISO_COUNTRIES.filter(c => c.toLowerCase().includes(q)).slice(0, 50);
+      list.innerHTML = items.map(c => `<div class="ac-item" role="option">${c}</div>`).join("");
+      list.style.display = items.length ? "block" : "none";
     }
-    function filter(){
-      const q = input.value.trim().toLowerCase();
-      if (!q){ render([]); return; }
-      const items = ISO_COUNTRIES.filter(c => c.toLowerCase().includes(q)).slice(0,20);
-      render(items);
-    }
-    input.addEventListener('input', filter);
-    input.addEventListener('focus', filter);
-    input.addEventListener('blur', ()=> setTimeout(()=> list.style.display='none', 100));
-
-    list.addEventListener('click', (e)=>{
-      const el = e.target.closest('.ac-item');
+    input.addEventListener("input", render);
+    input.addEventListener("focus", render);
+    input.addEventListener("blur", () => setTimeout(()=> list.style.display = "none", 150));
+    list.addEventListener("click", (e) => {
+      const el = e.target.closest(".ac-item");
       if (!el) return;
       input.value = el.textContent;
-      list.style.display='none';
-      input.dispatchEvent(new Event('change'));
-    });
-
-    input.addEventListener('keydown', (e)=>{
-      const items = Array.from(list.querySelectorAll('.ac-item'));
-      if (!items.length) return;
-      if (e.key === 'ArrowDown'){ e.preventDefault(); active = Math.min(active+1, items.length-1); }
-      else if (e.key === 'ArrowUp'){ e.preventDefault(); active = Math.max(active-1, 0); }
-      else if (e.key === 'Enter'){ e.preventDefault(); if (active>=0){ items[active].click(); } }
-      items.forEach((el,i)=> el.classList.toggle('active', i===active));
+      list.style.display = "none";
+      input.dispatchEvent(new Event("change"));
     });
   }
 
-  function populateStartedYears(){
-    const sel = document.getElementById('startedYear');
-    if (!sel) return;
-    const now = new Date().getFullYear();
-    const min = 1900;
-    sel.innerHTML = '<option value="" disabled selected>Select year</option>' +
-      Array.from({length: now-min+1}, (_,k)=> now-k)
-        .map(y=>`<option value="${y}">${y}</option>`).join('');
-  }
-
-  // --- Geocoding fallback & mini picker ---
-  async function geocodeQuery(q){
+  /* ===== Geocoding with fallback ===== */
+  async function geocodeQuery(q) {
     if (!q) return null;
     const url = new URL('https://nominatim.openstreetmap.org/search');
     url.searchParams.set('q', q);
     url.searchParams.set('format', 'json');
     url.searchParams.set('limit', '1');
-    try{
-      const res = await fetch(url.toString(), { headers:{'Accept':'application/json'} });
+    try {
+      const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
       if (!res.ok) return null;
       const json = await res.json();
-      if (!Array.isArray(json) || json.length===0) return null;
-      return { lat: +json[0].lat, lng: +json[0].lon };
-    }catch{ return null; }
+      if (!Array.isArray(json) || json.length === 0) return null;
+      const { lat, lon } = json[0];
+      return { lat: parseFloat(lat), lng: parseFloat(lon) };
+    } catch { return null; }
   }
 
-  function buildGeocodeHelpers(){
-    const form = document.getElementById('mfgc-form');
-    if (!form) return;
-    const clubEl = form.querySelector('input[name="firstGolfClub"]');
-    const cityEl = form.querySelector('input[name="city"]');
-    const countryEl = form.querySelector('input[name="country"]');
+  /* ===== Mini Picker Map (robust sizing + centering) ===== */
+  let pickerMap = null, pickerMarker = null;
+
+  // Expose a helper: center the map & put the pin in the middle.
+  window.setPickerLocation = function(lat, lng, zoom = 13){
+    if (!pickerMap || !pickerMarker) return;
+    pickerMarker.setLatLng([lat, lng]);
+    pickerMap.setView([lat, lng], zoom, { animate: true });
+    // After animation/layout, ensure tiles fill the box
+    setTimeout(()=> pickerMap.invalidateSize(), 150);
+  };
+
+  function buildMiniPicker() {
+    const el = document.getElementById('picker-map');
     const latEl = document.getElementById('lat');
     const lngEl = document.getElementById('lng');
+    if (!el || !latEl || !lngEl || !window.L) return;
 
-    async function doGeocode(){
-      if (!countryEl?.value) return;
-      const full = [clubEl?.value, cityEl?.value, countryEl?.value].filter(Boolean).join(', ');
-      const city = [cityEl?.value, countryEl?.value].filter(Boolean).join(', ');
-      const only = (countryEl?.value||'').trim();
-      let r = await geocodeQuery(full) || await geocodeQuery(city) || await geocodeQuery(only);
-      if (r){ latEl.value = String(r.lat); lngEl.value = String(r.lng); }
+    pickerMap = L.map('picker-map', { attributionControl: false, zoomControl: true });
+    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+    tiles.addTo(pickerMap);
+
+    // Initial view
+    const start = [20,0];
+    pickerMap.setView(start, 2);
+    pickerMarker = L.marker(start, { draggable: true }).addTo(pickerMap);
+
+    pickerMarker.on('dragend', () => {
+      const p = pickerMarker.getLatLng();
+      latEl.value = String(p.lat.toFixed(6));
+      lngEl.value = String(p.lng.toFixed(6));
+    });
+
+    // If lat/lng already set (e.g., after geocode), center on them
+    const tryCenter = () => {
+      const lat = Number(latEl.value), lng = Number(lngEl.value);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        window.setPickerLocation(lat, lng, 13);
+      }
+    };
+
+    // Robust sizing: multiple kicks + ResizeObserver + tile load
+    const kick = () => pickerMap && pickerMap.invalidateSize();
+    setTimeout(kick, 0);
+    setTimeout(kick, 120);
+    setTimeout(kick, 400);
+    tiles.on('load', kick);
+    window.addEventListener('resize', kick);
+
+    if ('ResizeObserver' in window){
+      const ro = new ResizeObserver(kick);
+      ro.observe(el);
+      // Also observe the step/card container if present
+      const card = el.closest('.card') || el.parentElement;
+      if (card) ro.observe(card);
     }
 
-    [clubEl, cityEl, countryEl].forEach(el=>{
-      el && el.addEventListener('blur', doGeocode);
+    // Recenter when inputs change
+    ['input','change'].forEach(ev=>{
+      latEl.addEventListener(ev, tryCenter);
+      lngEl.addEventListener(ev, tryCenter);
+    });
+
+    // Give the DOM a moment, then center if we already have coords
+    setTimeout(tryCenter, 600);
+  }
+
+  /* ===== Geocoder wiring to call setPickerLocation ===== */
+  function buildGeocoder(){
+    const form = document.getElementById('mfgc-form') || document.querySelector('form');
+    if (!form) return;
+    const clubEl    = form.querySelector('input[name="firstGolfClub"]');
+    const cityEl    = form.querySelector('input[name="city"]');
+    const countryEl = form.querySelector('input[name="country"]');
+    const latEl     = form.querySelector('input[name="lat"]');
+    const lngEl     = form.querySelector('input[name="lng"]');
+    const statusEl  = document.getElementById('status');
+
+    async function geocodeWithFallback() {
+      const full = [clubEl?.value, cityEl?.value, countryEl?.value].filter(Boolean).join(', ').trim();
+      const city = [cityEl?.value, countryEl?.value].filter(Boolean).join(', ').trim();
+      const only = (countryEl?.value || '').trim();
+
+      let result = await geocodeQuery(full);
+      if (result) return result;
+
+      result = await geocodeQuery(city);
+      if (result) return result;
+
+      result = await geocodeQuery(only);
+      if (result) return result;
+
+      return null;
+    }
+
+    // On submit, if missing coords, geocode; then center the map
+    form.addEventListener('submit', async (e) => {
+      if (!latEl?.value || !lngEl?.value) {
+        try {
+          statusEl && (statusEl.textContent = 'Locating course…');
+          const coords = await geocodeWithFallback();
+          if (coords) {
+            latEl.value = String(coords.lat);
+            lngEl.value = String(coords.lng);
+            if (window.setPickerLocation) window.setPickerLocation(coords.lat, coords.lng, 15);
+          }
+        } finally {
+          statusEl && (statusEl.textContent = '');
+        }
+      }
+    });
+
+    // On blur of country/club, try early geocode and center
+    [countryEl, clubEl].forEach(el => {
+      el?.addEventListener('blur', async () => {
+        if (latEl?.value && lngEl?.value) return;
+        const coords = await geocodeWithFallback();
+        if (coords) {
+          latEl.value = String(coords.lat);
+          lngEl.value = String(coords.lng);
+          if (window.setPickerLocation) window.setPickerLocation(coords.lat, coords.lng, 15);
+        }
+      });
     });
   }
 
-function buildMiniPicker() {
-  const pickerEl = document.getElementById('picker-map');
-  const latEl = document.getElementById('lat');
-  const lngEl = document.getElementById('lng');
-  if (!pickerEl || !latEl || !lngEl || !window.L) return;
-
-  // Create map
-  const map = L.map('picker-map', { attributionControl: false, zoomControl: true });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-  }).addTo(map);
-
-  const start = [20, 0];
-  map.setView(start, 2);
-
-  const marker = L.marker(start, { draggable: true }).addTo(map);
-  marker.on('dragend', () => {
-    const p = marker.getLatLng();
-    latEl.value = String(p.lat.toFixed(6));
-    lngEl.value = String(p.lng.toFixed(6));
-  });
-
-  function tryCenter() {
-    const lat = Number(latEl.value), lng = Number(lngEl.value);
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      marker.setLatLng([lat, lng]);
-      map.setView([lat, lng], 13);
-    }
-  }
-
-  // Make sure it fills the container
-  const kick = () => map.invalidateSize();
-  setTimeout(kick, 0);
-  setTimeout(kick, 250);
-  window.addEventListener('resize', kick);
-
-  // If your form uses step transitions, call kick again when step becomes visible.
-  // We also recenter shortly after.
-  setTimeout(tryCenter, 800);
-  ['input','change'].forEach(ev=>{
-    latEl.addEventListener(ev, tryCenter);
-    lngEl.addEventListener(ev, tryCenter);
-  });
-}
-
-  document.addEventListener('DOMContentLoaded', ()=>{
+  /* ===== Init ===== */
+  document.addEventListener('DOMContentLoaded', () => {
     buildCountryAutocomplete('country','country-suggestions');
     buildCountryAutocomplete('homeCountry','home-country-suggestions');
-    populateStartedYears();
-    buildGeocodeHelpers();
+    buildGeocoder();
     buildMiniPicker();
   });
 })();

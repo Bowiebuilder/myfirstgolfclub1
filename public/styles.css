@@ -158,3 +158,10 @@ fieldset.group + fieldset.group { margin-top: 10px; }
 
 /* Restore side "frame" feeling with a subtle background around cards */
 .card + .card { margin-top: 20px; }
+
+/* --- Map sizing hardening --- */
+#picker-map,
+#picker-map .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+}
