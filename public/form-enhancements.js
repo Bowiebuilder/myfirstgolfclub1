@@ -115,37 +115,50 @@
     });
   }
 
-  function buildMiniPicker(){
-    const picker = document.getElementById('picker-map');
-    const latEl = document.getElementById('lat');
-    const lngEl = document.getElementById('lng');
-    if (!picker || !latEl || !lngEl || !window.L) return;
+function buildMiniPicker() {
+  const pickerEl = document.getElementById('picker-map');
+  const latEl = document.getElementById('lat');
+  const lngEl = document.getElementById('lng');
+  if (!pickerEl || !latEl || !lngEl || !window.L) return;
 
-    const map = L.map('picker-map', { attributionControl:false, zoomControl:true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const start = [20,0];
-    map.setView(start, 2);
-    const marker = L.marker(start, { draggable:true }).addTo(map);
+  // Create map
+  const map = L.map('picker-map', { attributionControl: false, zoomControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
 
-    marker.on('dragend', ()=>{
-      const p = marker.getLatLng();
-      latEl.value = String(p.lat.toFixed(6));
-      lngEl.value = String(p.lng.toFixed(6));
-    });
+  const start = [20, 0];
+  map.setView(start, 2);
 
-    function tryCenter(){
-      const lat = +latEl.value, lng = +lngEl.value;
-      if (Number.isFinite(lat) && Number.isFinite(lng)){
-        map.setView([lat,lng], 13);
-        marker.setLatLng([lat,lng]);
-      }
+  const marker = L.marker(start, { draggable: true }).addTo(map);
+  marker.on('dragend', () => {
+    const p = marker.getLatLng();
+    latEl.value = String(p.lat.toFixed(6));
+    lngEl.value = String(p.lng.toFixed(6));
+  });
+
+  function tryCenter() {
+    const lat = Number(latEl.value), lng = Number(lngEl.value);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      marker.setLatLng([lat, lng]);
+      map.setView([lat, lng], 13);
     }
-    setTimeout(tryCenter, 600);
-    ['input','change'].forEach(ev=>{
-      latEl.addEventListener(ev, tryCenter);
-      lngEl.addEventListener(ev, tryCenter);
-    });
   }
+
+  // Make sure it fills the container
+  const kick = () => map.invalidateSize();
+  setTimeout(kick, 0);
+  setTimeout(kick, 250);
+  window.addEventListener('resize', kick);
+
+  // If your form uses step transitions, call kick again when step becomes visible.
+  // We also recenter shortly after.
+  setTimeout(tryCenter, 800);
+  ['input','change'].forEach(ev=>{
+    latEl.addEventListener(ev, tryCenter);
+    lngEl.addEventListener(ev, tryCenter);
+  });
+}
 
   document.addEventListener('DOMContentLoaded', ()=>{
     buildCountryAutocomplete('country','country-suggestions');
