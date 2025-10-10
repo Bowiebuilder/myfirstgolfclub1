@@ -1,139 +1,136 @@
 (function(){
-  // Map
-  const map = L.map('map').setView([20,0], 2);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'&copy; OpenStreetMap contributors'
-  }).addTo(map);
-  const cluster = L.markerClusterGroup().addTo(map);
+  // --- Map ---
+  let map, cluster;
 
-  const markersById = new Map();
-
-  async function fetchSubs(){
-    const r = await fetch('/api/submissions', { headers:{'Accept':'application/json'} });
-    if (!r.ok) return [];
-    try { return await r.json(); } catch { return []; }
+  function toFlag(countryName) {
+    // Minimal mapper (optional: improve with ISO map)
+    return '';
   }
 
-  function popupHTML(s){
-    const esc = (x)=> String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const name = [s.name || s.firstName, (s.last_initial || s.lastInitial) ? (s.last_initial||s.lastInitial)+'.' : ''].filter(Boolean).join(' ');
-    const loc  = [s.city, s.country].filter(Boolean).join(', ');
-    const course = esc(s.course_name || s.firstGolfClub || '');
-    const year = esc(s.startedYear || s.first_round_date || s.firstRoundDate || '');
-    const age  = s.ageWhenStarted ? `Started at ${esc(s.ageWhenStarted)}` : '';
-    const dream= s.dreamCourse ? `Dream: ${esc(s.dreamCourse)}` : '';
-    const note = s.moment || s.story ? esc(s.moment || s.story) : '';
+  function esc(s) {
+    return String(s ?? '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  function playerCardHTML(item){
+    const name = [item.firstName, item.lastInitial ? (item.lastInitial + '.') : '']
+      .filter(Boolean).join(' ');
+    const loc  = [item.city, item.country].filter(Boolean).join(', ');
+    const club = item.firstGolfClub ? esc(item.firstGolfClub) : '';
+    const year = item.startedYear ? esc(item.startedYear) :
+                 (item.firstRoundDate ? esc(item.firstRoundDate) : '');
+    const age  = item.ageWhenStarted ? `Started at ${esc(item.ageWhenStarted)}` : '';
+    const dream= item.dreamCourse ? `Dream: ${esc(item.dreamCourse)}` : '';
+    const how  = item.howGotIntoGolf ? esc(item.howGotIntoGolf) : '';
+    const story= item.story ? esc(item.story) :
+                 (item.moment ? esc(item.moment) : '');
+
+    const firstLine = club
+      ? `<div class="pc-row"><span>First round:</span> ${club}${year ? ` (${year})` : ''}</div>`
+      : (year ? `<div class="pc-row"><span>Started:</span> ${year}</div>` : '');
+
     return `
-      <div class="popup-card">
-        <strong>${esc(name||'Someone')}${s.homeCountry ? ' • '+esc(s.homeCountry) : ''}</strong><br/>
-        ${course ? `First round: ${course}${year ? ` (${year})` : ''}<br/>` : (year ? `Started: ${year}<br/>` : '')}
-        ${age ? `${age}<br/>` : ''}${dream ? `${dream}<br/>` : ''}
-        ${note ? `<em>${note}</em>` : ''}
-        ${loc ? `<div style="margin-top:6px;color:#6b7280">${esc(loc)}</div>` : ''}
+      <div class="player-card">
+        <div class="pc-header">
+          <div class="pc-avatar">${esc((item.firstName||'?')[0]).toUpperCase()}</div>
+          <div>
+            <div class="pc-name">${esc(name || 'Someone')}</div>
+            <div class="pc-meta">${esc(loc)}</div>
+          </div>
+        </div>
+        <div class="pc-body">
+          ${firstLine}
+          ${age ? `<div class="pc-row">${age}</div>` : ''}
+          ${dream ? `<div class="pc-row">${dream}</div>` : ''}
+          ${how ? `<div class="pc-note">“${how}”</div>` : ''}
+          ${story ? `<div class="pc-note small">“${story}”</div>` : ''}
+        </div>
       </div>
     `;
   }
 
-  function renderStats(rows){
-    const totalEl = document.getElementById('stat-total');
-    const avgAgeEl = document.getElementById('stat-avg-age');
-    const topCountriesEl = document.getElementById('stat-top-countries');
+  function initMap(){
+    map = L.map('map', { attributionControl: true, zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    map.setView([20,0], 2);
+    cluster = L.markerClusterGroup();
+    map.addLayer(cluster);
 
-    totalEl && (totalEl.textContent = String(rows.length));
-    const ages = rows.map(r => Number(r.ageWhenStarted || r.age_when_started)).filter(n => Number.isFinite(n) && n>0 && n<120);
-    const avg = ages.length ? Math.round(ages.reduce((a,b)=>a+b,0)/ages.length) : null;
-    avgAgeEl && (avgAgeEl.textContent = (avg ?? '—'));
-
-    const counts = {};
-    rows.forEach(r=>{
-      const c = (r.country || '').trim();
-      if (!c) return;
-      counts[c] = (counts[c]||0)+1;
-    });
-    const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`);
-    topCountriesEl && (topCountriesEl.textContent = top.length ? top.join(', ') : '—');
+    // Fix gray areas if container size changes
+    setTimeout(()=> map.invalidateSize(), 100);
+    window.addEventListener('resize', () => map.invalidateSize());
   }
 
-  async function loadPins(){
-    const rows = await fetchSubs();
-    cluster.clearLayers();
-    markersById.clear();
-
-    const ms = [];
-    rows.forEach(s=>{
-      const lat = Number(s.lat), lng = Number(s.lng);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-      const m = L.marker([lat,lng]).bindPopup(popupHTML(s), {minWidth:260,maxWidth:340});
-      cluster.addLayer(m);
-      ms.push(m);
-      if (s.id) markersById.set(String(s.id), m);
-    });
-
-    if (ms.length){
-      const group = L.featureGroup(ms);
-      map.fitBounds(group.getBounds().pad(0.25));
-    }
-
+  async function loadData(){
+    const res = await fetch('/api/submissions', { headers: { 'Accept': 'application/json' } });
+    const rows = await res.json();
+    renderMap(rows);
     renderStats(rows);
   }
 
-  loadPins();
-
-  // Success banner
-  const banner = document.getElementById('success-banner');
-  const closeBtn = document.getElementById('banner-close');
-  closeBtn && (closeBtn.onclick = ()=> banner.classList.add('hidden'));
-
-  function showBanner(){
-    banner?.classList.remove('hidden');
-    setTimeout(()=> banner?.classList.add('hidden'), 6000);
+  function renderMap(rows){
+    cluster.clearLayers();
+    const markers = [];
+    rows.forEach(item => {
+      const lat = Number(item.lat), lng = Number(item.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const m = L.marker([lat,lng]).bindPopup(playerCardHTML(item), { minWidth: 260, maxWidth: 340 });
+      cluster.addLayer(m);
+      markers.push(m);
+    });
+    if (markers.length) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.25));
+    }
   }
 
-  // Form submit
-  const form = document.getElementById('mfgc-form');
-  const status = document.getElementById('status');
-  form?.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    status.textContent = 'Submitting...';
-    const submitBtn = form.querySelector('button[type="submit"]'); submitBtn && (submitBtn.disabled = true);
+  // --- New Stats ---
+  function renderStats(rows){
+    const totalEl       = document.getElementById('stat-total');
+    const avgAgeEl      = document.getElementById('stat-avg-age');
+    const youngestEl    = document.getElementById('stat-youngest');
+    const oldestEl      = document.getElementById('stat-oldest');
+    const topCountriesEl= document.getElementById('stat-top-countries');
 
-    try{
-      const fd = new FormData(form);
-      const latVal = fd.get('lat'); const lngVal = fd.get('lng');
+    // Total users
+    totalEl && (totalEl.textContent = String(rows.length));
 
-      const res = await fetch(form.action, { method:'POST', body: fd });
-      let json = {};
-      try{ json = await res.json(); }catch{}
-      if (!res.ok) throw new Error(json.error || 'Submission failed');
+    // Ages: numeric, sensible bounds
+    const ages = rows
+      .map(r => Number(r.ageWhenStarted))
+      .filter(n => Number.isFinite(n) && n >= 3 && n <= 100);
 
-      status.textContent = '';
-      showBanner();
+    // Average
+    const avg = ages.length ? (ages.reduce((a,b)=>a+b,0) / ages.length) : null;
+    avgAgeEl && (avgAgeEl.textContent = (avg !== null) ? String(Math.round(avg)) : '—');
 
-      // Refresh pins
-      await loadPins();
+    // Youngest / Oldest
+    const youngest = ages.length ? Math.min(...ages) : null;
+    const oldest   = ages.length ? Math.max(...ages) : null;
+    youngestEl && (youngestEl.textContent = (youngest !== null) ? String(youngest) : '—');
+    oldestEl && (oldestEl.textContent   = (oldest   !== null) ? String(oldest)   : '—');
 
-      // Try to open "your" pin
-      let targetMarker = null;
-      if (json.id && markersById.has(String(json.id))){
-        targetMarker = markersById.get(String(json.id));
-      } else if (latVal && lngVal){
-        const lat = Number(latVal), lng = Number(lngVal);
-        if (Number.isFinite(lat) && Number.isFinite(lng)){
-          targetMarker = L.marker([lat,lng]).bindPopup('<div class="popup-card"><strong>✅ Your pin</strong></div>');
-          targetMarker.addTo(map);
-        }
-      }
-      if (targetMarker){
-        const ll = targetMarker.getLatLng ? targetMarker.getLatLng() : null;
-        if (ll) map.setView(ll, 8);
-        targetMarker.openPopup && targetMarker.openPopup();
-      }
+    // Top 3 countries to start golf (count by r.country, case-insensitive, ignore blanks)
+    const counts = {};
+    rows.forEach(r => {
+      const c = (r.country || '').trim();
+      if (!c) return;
+      const key = c.toLowerCase();
+      counts[key] = (counts[key] || { label: c, n: 0 });
+      counts[key].n += 1;
+    });
+    const top = Object.values(counts)
+      .sort((a,b)=> b.n - a.n)
+      .slice(0,3)
+      .map(x => `${x.label} (${x.n})`);
 
-      form.reset();
-    }catch(err){
-      status.textContent = 'Error: ' + (err?.message || err);
-    }finally{
-      submitBtn && (submitBtn.disabled = false);
-    }
+    topCountriesEl && (topCountriesEl.textContent = top.length ? top.join(', ') : '—');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initMap();
+    loadData();
   });
 })();

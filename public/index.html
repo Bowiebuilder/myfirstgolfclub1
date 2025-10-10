@@ -43,7 +43,15 @@
         <div class="stat-value" id="stat-avg-age">—</div>
       </div>
       <div class="stat">
-        <div class="stat-label">Most popular countries</div>
+        <div class="stat-label">Youngest starting age</div>
+        <div class="stat-value" id="stat-youngest">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Oldest starting age</div>
+        <div class="stat-value" id="stat-oldest">—</div>
+      </div>
+      <div class="stat" style="grid-column: span 2;">
+        <div class="stat-label">Top 3 countries to start golf</div>
         <div class="stat-value" id="stat-top-countries">—</div>
       </div>
     </div>
@@ -53,8 +61,8 @@
   <section class="card">
     <h2>Share your first-round story</h2>
 
-    <!-- About You -->
     <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data">
+      <!-- About You -->
       <fieldset class="group">
         <legend>About you</legend>
         <div class="grid">
@@ -118,7 +126,7 @@
           <input name="firstGolfClub" id="firstGolfClub" required placeholder="e.g., Royal Nairobi Golf Club" />
         </label>
 
-        <!-- NEW: Read-only resolved address (no mini map) -->
+        <!-- Read-only resolved address -->
         <label>Resolved address (auto)
           <input id="resolved-address" name="resolvedAddress" readonly placeholder="Will appear after lookup…" />
         </label>
