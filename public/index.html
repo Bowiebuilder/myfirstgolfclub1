@@ -4,92 +4,119 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>My First Golf Club</title>
+
+  <!-- Site CSS -->
   <link rel="stylesheet" href="/styles.css" />
+
+  <!-- Mapbox CSS (map + geocoder) -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.css" rel="stylesheet" />
+
+  <!-- Mapbox GL + Geocoder -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.min.js"></script>
+
+  <!-- Your Mapbox Token -->
+  <script>
+    window.MAPBOX_TOKEN = "pk.eyJ1IjoiYm93aWViZW5kZXIiLCJhIjoiY21nbDFvbHRmMDRtcTJsc2FoaGRtZjNudCJ9.Op70cN8itrQlnUH3vVQ49A";
+  </script>
+
+  <!-- Cloudflare Turnstile -->
   <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>
-  <link
-    href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
-    rel="stylesheet"
-  />
 </head>
 <body>
+
   <header class="site-header">
-    <h1>Where did your golf journey begin?</h1>
-    <p>Share your first-round story and join golfers from around the world on our interactive map.</p>
+    <h1>My First Golf Club</h1>
+    <p>Explore where golfers around the world played their first full round — and add your story.</p>
   </header>
 
   <!-- MAP -->
-  <section id="map-section" class="card wide">
+  <section class="card wide">
     <div id="map"></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="card">
+    <h2>Community stats</h2>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Total users</div><div class="stat-value" id="stat-total">—</div></div>
+      <div class="stat"><div class="stat-label">Average starting age</div><div class="stat-value" id="stat-avg-age">—</div></div>
+      <div class="stat"><div class="stat-label">Youngest starting</div><div class="stat-value" id="stat-youngest">—</div></div>
+      <div class="stat"><div class="stat-label">Oldest starting</div><div class="stat-value" id="stat-oldest">—</div></div>
+      <div class="stat"><div class="stat-label">Top countries</div><div class="stat-value" id="stat-top-countries">—</div></div>
+    </div>
   </section>
 
   <!-- FORM -->
   <section class="card">
-    <h2>About You</h2>
     <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data">
-      <label>Name (First + Surname initial)
-        <input name="firstName" required placeholder="e.g. John M" />
-      </label>
-      <label>Home country
-        <input name="homeCountry" id="homeCountry" placeholder="Start typing your country…" />
-        <div id="home-country-suggestions" class="ac-list" style="display:none"></div>
-      </label>
-  </section>
+      <h2>Add Your Story</h2>
 
-  <section class="card">
-    <h2>First Swing</h2>
-    <p class="subtext">How did you start your journey in golf?</p>
+      <!-- STEP 1 -->
+      <fieldset class="group">
+        <legend>About You</legend>
+        <label>First Name and Surname Initial <span class="req">*</span>
+          <input id="nameCombo" name="nameCombo" placeholder="e.g., John M" required />
+        </label>
+        <label>Home country (flag shown on your card)
+          <div class="field-relative">
+            <input name="homeCountry" id="homeCountry" autocomplete="off" placeholder="Start typing a country…" />
+            <div id="home-country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
+          </div>
+        </label>
+      </fieldset>
 
-    <label>Age when you started
-      <select name="ageWhenStarted" id="ageWhenStarted" required></select>
-    </label>
+      <!-- STEP 2 -->
+      <fieldset class="group">
+        <legend>First Swing</legend>
+        <p class="subtle">How did you start your journey in golf?</p>
+        <div class="grid two-col">
+          <div>
+            <label>Age when you started <span class="req">*</span>
+              <select id="ageStarted" name="ageWhenStarted" required></select>
+            </label>
+            <label>Who got you started? (optional)
+              <input name="whoStarted" id="whoStarted" maxlength="30" placeholder="Grandfather, parent, friend…" />
+            </label>
+          </div>
+          <div>
+            <label>Location where you started <span class="req">*</span>
+              <div id="startLocation" class="mbx-geocoder"></div>
+              <input type="hidden" id="lat" name="lat" />
+              <input type="hidden" id="lng" name="lng" />
+            </label>
+            <label>Address of location
+              <input id="addressOutput" name="resolvedAddress" placeholder="Will appear after you choose a place" readonly />
+            </label>
+          </div>
+        </div>
+      </fieldset>
 
-    <label>Who got you started?
-      <input name="whoStarted" maxlength="30" placeholder="Grandfather, parent, etc." />
-    </label>
+      <!-- STEP 3 -->
+      <fieldset class="group">
+        <legend>Clubhouse Tales</legend>
+        <label>Favourite golfing story (optional)
+          <textarea name="story" maxlength="2000" placeholder="What golfing memory always makes you smile?"></textarea>
+        </label>
+        <label>Dream golf course (optional)
+          <div id="dreamCourseBox" class="mbx-geocoder"></div>
+          <input type="hidden" id="dreamCourse" name="dreamCourse" />
+        </label>
+      </fieldset>
 
-    <label>Location where you started
-      <input name="startLocation" id="startLocation" required placeholder="Start typing golf club, area, or address…" />
-      <div id="course-suggestions" class="ac-list" style="display:none"></div>
-    </label>
+      <div class="consent-row">
+        <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
+        <label for="consentMapPin" class="consent-label">I’m happy for a pin to appear on the map for this submission.</label>
+      </div>
 
-    <label>Address of location
-      <input id="resolved-address" name="resolvedAddress" readonly placeholder="Will appear after lookup…" />
-    </label>
-
-    <input type="hidden" name="lat" id="lat" />
-    <input type="hidden" name="lng" id="lng" />
-  </section>
-
-  <section class="card">
-    <h2>Clubhouse Tales</h2>
-    <label>What golfing memory always makes you smile?
-      <textarea name="story" maxlength="2000"></textarea>
-    </label>
-
-    <label>Dream golf course
-      <input name="dreamCourse" id="dreamCourse" placeholder="Type a famous course or any course…" />
-      <div id="dream-suggestions" class="ac-list" style="display:none"></div>
-    </label>
-
-    <label>Earliest golf photo (optional)
-      <input type="file" name="photo" accept="image/*" />
-    </label>
-
-    <div class="consent-row">
-      <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
-      <label for="consentMapPin" class="consent-label">
-        I’m happy for a pin to appear on the map for this submission.
-      </label>
-    </div>
-
-    <div class="cf-turnstile" data-sitekey="0x4AAAAAAB5r0dz4fZGQZB2z"></div>
-    <button type="submit" class="btn">Submit</button>
-    <p id="status" class="status"></p>
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAB5r0dz4fZGQZB2z"></div>
+      <button type="submit" class="btn">Submit</button>
+      <p id="status" class="status"></p>
     </form>
   </section>
 
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-  <script src="/form-enhancements.js"></script>
+  <!-- Site JS -->
   <script src="/site.js"></script>
 </body>
 </html>
