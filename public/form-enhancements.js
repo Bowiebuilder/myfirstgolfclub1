@@ -1,4 +1,7 @@
 (function(){
+  const MAPBOX_KEY = "pk.eyJ1IjoiYm93aWViZW5kZXIiLCJhIjoiY21nbDFvbHRmMDRtcTJsc2FoaGRtZjNudCJ9.Op70cN8itrQlnUH3vVQ49A";
+
+  // Age dropdown
   const ageSelect = document.getElementById("ageWhenStarted");
   if (ageSelect) {
     for (let i = 1; i <= 120; i++) {
@@ -9,9 +12,20 @@
     }
   }
 
-  async function fakeGeocode(query) {
-    // Here you’d use Mapbox Places API
-    return { address: "123 Golf Lane, Sample City", lat: 51.5, lng: -0.12 };
+  async function geocodeWithMapbox(query) {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_KEY}&limit=1`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.features && data.features.length) {
+      const f = data.features[0];
+      return { 
+        address: f.place_name,
+        lat: f.center[1],
+        lng: f.center[0]
+      };
+    }
+    return null;
   }
 
   const form = document.getElementById("mfgc-form");
@@ -25,10 +39,12 @@
     status.textContent = "Submitting...";
     try {
       if (!latEl.value || !lngEl.value) {
-        const result = await fakeGeocode(document.getElementById("startLocation").value);
-        addrEl.value = result.address;
-        latEl.value = result.lat;
-        lngEl.value = result.lng;
+        const result = await geocodeWithMapbox(document.getElementById("startLocation").value);
+        if (result) {
+          addrEl.value = result.address;
+          latEl.value = result.lat;
+          lngEl.value = result.lng;
+        }
       }
       const res = await fetch(form.action, { method: "POST", body: new FormData(form) });
       const json = await res.json();
