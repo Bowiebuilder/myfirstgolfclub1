@@ -1,353 +1,148 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>My First Golf Club</title>
+  <link rel="stylesheet" href="/styles.css" />
 
-  <!-- Typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS (free OSM map) -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
+  <!-- MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
   <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>
-
-  <style>
-    :root{
-      --bg: #f7f5ef;           /* soft beige */
-      --card: #ffffff;
-      --green: #1f5f3a;        /* Augusta green */
-      --green-2:#2b7a4b;
-      --gold: #b8860b;
-      --text:#0f172a;
-      --muted:#6b7280;
-      --border:#e5e7eb;
-      --border-strong:#cdd3dd;
-      --focus:#2563eb;
-      --shadow: 0 8px 24px rgba(0,0,0,.08);
-      --radius: 16px;
-      --radius-sm: 12px;
-      --radius-lg: 22px;
-      --btn-bg:#0f172a;
-      --btn-bg-hover:#1f2937;
-      --btn-text:#fff;
-      --container: 1120px;
-      --container-wide: 1400px;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { margin:0; padding:0; }
-    body {
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      color: var(--text); background: var(--bg);
-    }
-
-    .shell {
-      max-width: var(--container);
-      margin: 0 auto; padding: 0 20px;
-    }
-    .shell-wide {
-      max-width: var(--container-wide);
-      margin: 0 auto; padding: 0 20px;
-    }
-
-    /* Hero */
-    .hero {
-      padding: 36px 0 14px;
-      border-inline: 10px solid transparent;
-    }
-    .hero h1 {
-      font-family: "Libre Baskerville", Georgia, serif;
-      font-size: clamp(28px, 3.6vw, 40px);
-      margin: 0 0 8px;
-      color: var(--green);
-      letter-spacing: .2px;
-    }
-    .hero p { margin: 0 0 14px; color: var(--muted); max-width: 68ch; }
-    .cta {
-      display:inline-block; background: var(--green); color:#fff;
-      padding: 12px 18px; border-radius: 999px; text-decoration:none; font-weight: 700;
-      box-shadow: var(--shadow);
-    }
-    .cta:hover{ background: var(--green-2); }
-
-    /* Card */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      margin: 18px 0;
-      padding: 16px;
-    }
-    .card h2 {
-      font-family: "Libre Baskerville", Georgia, serif;
-      margin: 0 0 10px; color: var(--green);
-      font-size: clamp(22px, 2.6vw, 28px);
-    }
-
-    /* Map */
-    #map { height: 64vh; min-height: 420px; border-radius: var(--radius); border:1px solid var(--border); }
-    .leaflet-popup-content { margin: 10px 10px 14px; }
-    .player-card { max-width: 320px; }
-    .pc-header { display:flex; gap:10px; align-items:center; margin-bottom: 6px; }
-    .pc-avatar { width:38px; height:38px; border-radius:50%; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; }
-    .pc-name { font-weight: 700; }
-    .pc-meta { font-size: 0.85rem; color:#6b7280; }
-    .pc-body { display:flex; flex-direction:column; gap:6px; }
-    .pc-row span { color:#6b7280; margin-right:4px; }
-    .pc-note { background:#f8fafc; border:1px solid #e5e7eb; padding:8px; border-radius:10px; }
-    .pc-note.small { font-size: 0.9rem; }
-
-    /* Multi-step */
-    .steps { display:flex; gap:8px; align-items:center; margin: 2px 0 14px; }
-    .step {
-      flex:1; height:6px; border-radius: 999px; background:#e5e7eb; position:relative; overflow:hidden;
-    }
-    .step.active::after, .step.done::after {
-      content:""; position:absolute; inset:0; background: var(--green);
-      transform: scaleX(1); transform-origin:left;
-    }
-    .step.active::after { background: linear-gradient(90deg, var(--green), var(--gold)); }
-
-    .step-title {
-      display:flex; gap:8px; align-items:center; margin: 0 0 12px;
-      font-weight: 700; color: var(--text);
-    }
-    .step-sub { color: var(--muted); margin: 2px 0 14px; }
-
-    /* Form layout */
-    form label { display:block; color: var(--text); font-weight: 600; margin: 8px 0 6px; }
-    input[type="text"], input[type="number"], input[type="file"],
-    input[type="search"], input[type="email"], textarea, select {
-      width: 100%; border: 1.5px solid var(--border);
-      border-radius: 12px; padding: 11px 12px; background:#fff; color: var(--text);
-      outline: none; font: inherit;
-    }
-    input:focus, textarea:focus, select:focus { outline: 3px solid #d1e9ff; border-color:#93c5fd; }
-
-    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .stack { display:grid; gap: 10px; }
-
-    .inline { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
-
-    /* Autocomplete list */
-    .field-relative { position: relative; }
-    .ac-list {
-      position: absolute; top: 100%; left: 0; z-index: 20;
-      display: none; background: #fff; border: 1px solid var(--border); border-radius: 12px;
-      margin-top: 4px; max-height: 240px; overflow: auto; box-shadow: var(--shadow);
-      min-width: 100%;
-    }
-    .ac-item { padding: 10px 12px; cursor: pointer; }
-    .ac-item:hover, .ac-item.active { background: #eef2ff; }
-
-    /* Mini picker */
-    .mini { margin-top: 8px; }
-    #picker-map { height: 220px; border-radius: 12px; border: 1px solid var(--border); }
-
-    /* Consent */
-    .consent-row {
-      display:flex; align-items:center; gap:10px;
-      padding:10px 12px; border:1.5px solid var(--border-strong);
-      border-radius: 12px; background:#fff; margin: 10px 0 14px 0;
-    }
-    .consent-row input[type="checkbox"] { width:22px; height:22px; accent-color: var(--green); }
-
-    /* Buttons */
-    .btn { background: var(--btn-bg); color: var(--btn-text); border:0; border-radius: 12px; padding: 12px 16px; font-weight:700; cursor:pointer; }
-    .btn:hover { background: var(--btn-bg-hover); }
-    .btn-ghost { background: transparent; color: var(--text); border:1.5px solid var(--border); }
-    .actions { display:flex; gap: 8px; flex-wrap: wrap; }
-
-    /* Success banner */
-    .toast {
-      position: fixed; left: 50%; top: 18px; transform: translateX(-50%);
-      background: #ffffff; border: 1px solid var(--border); border-radius: 999px; padding: 10px 14px;
-      box-shadow: var(--shadow); display: none; align-items:center; gap:10px; z-index: 9999;
-    }
-    .toast.show { display:flex; }
-    .ball-cup { width:22px; height:22px; border-radius: 50%; background: #fff; border:2px solid var(--green); position:relative; }
-    .ball-cup::after {
-      content:""; position:absolute; bottom:-6px; left:50%; transform: translateX(-50%);
-      width: 20px; height: 6px; background: radial-gradient(ellipse at center, #000 0%, #000 40%, transparent 41%);
-      border-radius: 50%;
-      opacity:.15;
-    }
-
-    /* Footer spacing */
-    .spacer { height: 20px; }
-
-    @media (max-width: 900px){
-      .grid-2 { grid-template-columns: 1fr; }
-    }
-  </style>
 </head>
 <body>
-  <div class="hero shell">
-    <h1>Where did your golf journey begin?</h1>
-    <p>Share your first-round story and join golfers from around the world on our interactive map.</p>
-    <a class="cta" href="#submit">Add Your Story</a>
-  </div>
+  <header class="site-header">
+    <h1>My First Golf Club</h1>
+    <p>Explore where golfers around the world played their first full round — and add your story.</p>
+  </header>
 
-  <!-- MAP (filters removed per your request) -->
-  <section class="card shell-wide" id="map-section">
-    <h2>Global Map of First Rounds</h2>
+  <!-- MAP -->
+  <section id="map-section" class="card wide">
     <div id="map"></div>
   </section>
 
+  <!-- STATS -->
+  <section id="stats-section" class="card">
+    <h2>Community stats</h2>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-label">Total users</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Average starting age</div>
+        <div class="stat-value" id="stat-avg-age">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Most popular countries</div>
+        <div class="stat-value" id="stat-top-countries">—</div>
+      </div>
+    </div>
+  </section>
+
   <!-- FORM -->
-  <section class="card shell" id="submit">
-    <div class="steps" aria-hidden="true">
-      <div class="step done" id="stepbar-1"></div>
-      <div class="step" id="stepbar-2"></div>
-      <div class="step" id="stepbar-3"></div>
-    </div>
+  <section class="card">
+    <h2>Share your first-round story</h2>
 
-    <!-- Step 1: About You -->
-    <div id="step-1">
-      <div class="step-title">About You</div>
-      <p class="step-sub">A few details so your player card feels personal.</p>
-
-      <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data" novalidate>
-        <div class="grid-2">
-          <div class="stack">
-            <label>First name
-              <input name="firstName" required placeholder="Your first name" />
-            </label>
-            <label>Surname initial
-              <input name="lastInitial" maxlength="3" placeholder="Letter(s) of your surname (e.g., T)" />
-            </label>
-          </div>
-
-          <div class="stack">
-            <label>Your home country
-              <div class="field-relative">
-                <input name="homeCountry" id="homeCountry" autocomplete="off" required placeholder="Start typing a country…" />
-                <div id="home-country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
-              </div>
-            </label>
-            <label>Earliest golf photo (optional)
-              <input type="file" name="photo" accept="image/*" />
-            </label>
-          </div>
-        </div>
-
-        <div class="actions" style="margin-top:10px">
-          <button type="button" class="btn" id="next-1">Next: First Swing</button>
-        </div>
-
-        <!-- Hidden: coords -->
-        <input type="hidden" name="lat" id="lat" />
-        <input type="hidden" name="lng" id="lng" />
-      </form>
-    </div>
-
-    <!-- Step 2: First Swing (two columns) -->
-    <div id="step-2" style="display:none">
-      <div class="step-title">First Swing</div>
-      <p class="step-sub">Tell us when and where you started—then we’ll drop the pin.</p>
-
-      <div class="grid-2">
-        <!-- Column 1: When You Started -->
-        <div class="stack">
-          <h3 style="margin:0 0 4px">When You Started</h3>
-          <label>Year you started playing
-            <select id="startedYearSelect" name="startedYear"></select>
+    <!-- About You -->
+    <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data">
+      <fieldset class="group">
+        <legend>About you</legend>
+        <div class="grid">
+          <label>First name
+            <input name="firstName" required placeholder="Your first name" />
           </label>
-          <label>Age when you started
+          <label>Surname initial
+            <input name="lastInitial" maxlength="3" placeholder="Letter(s) of your surname (e.g., T)" />
+          </label>
+        </div>
+        <label>Your home country (for your player-card flag)
+          <div class="field-relative">
+            <input name="homeCountry" id="homeCountry" autocomplete="off" required placeholder="Start typing a country…" />
+            <div id="home-country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
+          </div>
+        </label>
+      </fieldset>
+
+      <!-- How I got started -->
+      <fieldset class="group">
+        <legend>How I got started in golf</legend>
+        <div class="grid">
+          <label>Year I started playing golf
+            <input name="startedYear" id="startedYear" inputmode="numeric" pattern="\\d{4}" placeholder="YYYY (e.g., 2008)" />
+          </label>
+          <label>Age when I started
             <input name="ageWhenStarted" type="number" min="3" max="100" placeholder="e.g., 12" />
           </label>
-          <label>Who got you started in golf?
-            <input name="whoStartedYou" placeholder="e.g., Grandfather, parent, friend, coach…" />
+        </div>
+        <div class="grid">
+          <label>How I got into golf (optional)
+            <input name="howGotIntoGolf" placeholder="A friend invited me / Family / TV / Other…" />
+          </label>
+          <label>Dream golf course (optional)
+            <input name="dreamCourse" placeholder="e.g., St Andrews, Augusta National" />
           </label>
         </div>
+        <label>Favourite or worst golf moment (optional)
+          <textarea name="moment" maxlength="2000" placeholder="Tell us a highlight… or a horror shot!"></textarea>
+        </label>
+        <label>Earliest golf photo (optional)
+          <input type="file" name="photo" accept="image/*" />
+        </label>
+      </fieldset>
 
-        <!-- Column 2: Where You Started -->
-        <div class="stack">
-          <h3 style="margin:0 0 4px">Where You Started</h3>
+      <!-- Course & Location -->
+      <fieldset class="group">
+        <legend>Course & location</legend>
+        <div class="grid">
+          <label>City where you played your first round
+            <input name="city" placeholder="e.g., St Andrews, Nairobi, Melbourne" />
+          </label>
           <label>Country of the course
             <div class="field-relative">
               <input name="country" id="country" autocomplete="off" required placeholder="Start typing a country…" />
               <div id="country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
             </div>
           </label>
-
-          <label>Area (city / village)
-            <input name="city" id="city" placeholder="e.g., St Andrews, Nairobi, Melbourne" />
-          </label>
-
-          <label>Golf club / course name
-            <div class="field-relative">
-              <input name="firstGolfClub" id="course" autocomplete="off" required placeholder="Start typing your course…" />
-              <div id="course-suggestions" class="ac-list" role="listbox" style="display:none"></div>
-            </div>
-          </label>
-
-          <div class="mini">
-            <p class="step-sub" style="margin:8px 0">We’ll try to place the pin on your course. Drag the marker if it’s off.</p>
-            <div id="picker-map"></div>
-          </div>
         </div>
-      </div>
-
-      <div class="actions" style="margin-top:12px">
-        <button type="button" class="btn-ghost" id="back-2">Back</button>
-        <button type="button" class="btn" id="next-2">Next: Clubhouse Tales</button>
-      </div>
-    </div>
-
-    <!-- Step 3: Clubhouse Tales -->
-    <div id="step-3" style="display:none">
-      <div class="step-title">Clubhouse Tales</div>
-      <p class="step-sub">Share a highlight or a horror shot—we love both.</p>
-
-      <div class="stack">
-        <label>Best shot? Worst miss?
-          <textarea name="moment" maxlength="2000" placeholder="Tell us a highlight… or a horror shot!"></textarea>
-        </label>
-        <label>Dream golf course (optional)
-          <input name="dreamCourse" placeholder="e.g., St Andrews, Augusta National" />
+        <label>Golf club / course name
+          <input name="firstGolfClub" id="firstGolfClub" required placeholder="e.g., Royal Nairobi Golf Club" />
         </label>
 
-        <div class="consent-row">
-          <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
-          <label for="consentMapPin" class="consent-label">
-            I’m happy for a pin to appear on the map for this submission.
-          </label>
-        </div>
+        <!-- NEW: Read-only resolved address (no mini map) -->
+        <label>Resolved address (auto)
+          <input id="resolved-address" name="resolvedAddress" readonly placeholder="Will appear after lookup…" />
+        </label>
 
-        <div class="actions">
-          <button type="button" class="btn-ghost" id="back-3">Back</button>
-          <button type="submit" class="btn" id="submit-btn" form="mfgc-form">Submit</button>
-        </div>
+        <input type="hidden" name="lat" id="lat" />
+        <input type="hidden" name="lng" id="lng" />
+      </fieldset>
 
-        <p id="status" class="step-sub"></p>
+      <!-- Consent & submit -->
+      <div class="consent-row">
+        <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
+        <label for="consentMapPin" class="consent-label">
+          I’m happy for a pin to appear on the map for this submission.
+        </label>
       </div>
-    </div>
+
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAB5r0dz4fZGQZB2z"></div>
+
+      <button type="submit" class="btn">Submit</button>
+      <p id="status" class="status"></p>
+    </form>
   </section>
 
-  <div class="spacer"></div>
-
-  <!-- Toast -->
-  <div class="toast" id="toast">
-    <div class="ball-cup" aria-hidden="true"></div>
-    <div id="toast-text">✅ Your story has been added. We’ve dropped your pin!</div>
-    <button class="btn-ghost" id="toast-close" style="padding:6px 10px;border-radius:999px">Close</button>
-  </div>
-
-  <!-- Leaflet JS -->
+  <!-- Leaflet JS + Clustering -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -355,393 +150,8 @@
   ></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-  <script>
-  (function(){
-    // ---- Utilities ----
-    const $ = (sel, root=document) => root.querySelector(sel);
-    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-    const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
-    const esc = (s) => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
-
-    const ISO_COUNTRIES = [
-      "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan",
-      "Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi",
-      "Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Congo-Brazzaville)","Costa Rica","Côte d’Ivoire","Croatia","Cuba","Cyprus","Czechia",
-      "Democratic Republic of the Congo","Denmark","Djibouti","Dominica","Dominican Republic",
-      "Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia",
-      "Fiji","Finland","France",
-      "Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana",
-      "Haiti","Honduras","Hungary",
-      "Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy",
-      "Jamaica","Japan","Jordan",
-      "Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan",
-      "Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg",
-      "Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar",
-      "Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway",
-      "Oman","Pakistan","Palau","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal",
-      "Qatar","Romania","Russia","Rwanda",
-      "Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria",
-      "Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
-      "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan",
-      "Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"
-    ];
-
-    // ---- Autocomplete helpers ----
-    function makeAutocomplete(inputEl, listEl, source){
-      let idx = -1;
-      let items = [];
-      function close(){ listEl.style.display='none'; listEl.innerHTML=''; idx=-1; }
-      function open() { listEl.style.display='block'; }
-
-      inputEl.addEventListener('input', () => {
-        const q = inputEl.value.trim().toLowerCase();
-        items = source(q).slice(0, 8);
-        if (!q || items.length === 0){ close(); return; }
-        listEl.innerHTML = items.map((t,i)=>`<div class="ac-item" data-index="${i}">${esc(t)}</div>`).join('');
-        open();
-      });
-
-      listEl.addEventListener('mousedown', (e)=>{
-        const it = e.target.closest('.ac-item'); if(!it) return;
-        const i = Number(it.dataset.index);
-        inputEl.value = items[i] || inputEl.value;
-        inputEl.dispatchEvent(new Event('change'));
-        close();
-      });
-
-      inputEl.addEventListener('keydown', (e)=>{
-        const vis = listEl.style.display !== 'none';
-        if(!vis) return;
-        if (e.key === 'ArrowDown'){ e.preventDefault(); idx = Math.min(idx+1, listEl.children.length-1); highlight(); }
-        if (e.key === 'ArrowUp'){ e.preventDefault(); idx = Math.max(idx-1, 0); highlight(); }
-        if (e.key === 'Enter'){ e.preventDefault(); if (idx>=0){ listEl.children[idx].dispatchEvent(new MouseEvent('mousedown')); } }
-        if (e.key === 'Escape'){ close(); }
-      });
-
-      document.addEventListener('click',(e)=>{ if(!listEl.contains(e.target) && e.target!==inputEl) close(); });
-
-      function highlight(){
-        [...listEl.children].forEach((c,i)=> c.classList.toggle('active', i===idx));
-      }
-    }
-
-    // Country autocomplete
-    function countrySource(q){
-      if(!q) return [];
-      return ISO_COUNTRIES.filter(c=> c.toLowerCase().includes(q));
-    }
-
-    // ---- Year select ----
-    function fillYearSelect(sel){
-      const now = new Date().getFullYear();
-      const start = 1930;
-      sel.innerHTML = '<option value="">Select year (optional)</option>' +
-        Array.from({length: now - start + 1}, (_,i)=> now - i)
-          .map(y=> `<option value="${y}">${y}</option>`).join('');
-    }
-
-    // ---- Map setup ----
-    let map, cluster;
-    const markers = [];
-    function initMap(){
-      map = L.map('map');
-      const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        attribution: '&copy; OpenStreetMap'
-      }).addTo(map);
-      cluster = L.markerClusterGroup();
-      map.addLayer(cluster);
-      map.setView([20,0], 2);
-    }
-
-    function toFlag(countryName){
-      // Simple: convert common country names to flag by ISO mapping if needed.
-      // For now, we’ll use a rough mapping for popular ones, else empty.
-      const map = {
-        "United Kingdom":"GB","United States":"US","Ireland":"IE","Australia":"AU","New Zealand":"NZ","Canada":"CA","South Africa":"ZA","India":"IN","Japan":"JP","Spain":"ES","France":"FR","Germany":"DE","Italy":"IT","Sweden":"SE","Norway":"NO","Denmark":"DK","Finland":"FI","Netherlands":"NL","Portugal":"PT","Mexico":"MX","Brazil":"BR","Argentina":"AR"
-      };
-      const code = (map[countryName]||"").toUpperCase();
-      if(!code) return "";
-      return code.replace(/./g, c => String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0)));
-    }
-
-    function playerCardHTML(item){
-      const name = [item.firstName, item.lastInitial ? (item.lastInitial + '.') : ''].filter(Boolean).join(' ');
-      const loc  = [item.city, item.country].filter(Boolean).join(', ');
-      const club = item.firstGolfClub ? esc(item.firstGolfClub) : '';
-      const year = item.startedYear ? esc(item.startedYear) : '';
-      const age  = item.ageWhenStarted ? `Started at ${esc(item.ageWhenStarted)}` : '';
-      const dream= item.dreamCourse ? `Dream: ${esc(item.dreamCourse)}` : '';
-      const how  = item.whoStartedYou ? `Started by: ${esc(item.whoStartedYou)}` : '';
-      const story= item.moment ? esc(item.moment) : '';
-      const flag = item.homeCountry ? toFlag(item.homeCountry) : '';
-
-      const firstLine = club
-        ? `<div class="pc-row"><span>First round:</span> ${club}${year ? ` (${year})` : ''}</div>`
-        : (year ? `<div class="pc-row"><span>Started:</span> ${year}</div>` : '');
-
-      return `
-        <div class="player-card">
-          <div class="pc-header">
-            <div class="pc-avatar">${flag || esc((item.firstName||'?')[0]).toUpperCase()}</div>
-            <div>
-              <div class="pc-name">${esc(name || 'Someone')} ${flag ? `<span class="pc-flag">${flag}</span>` : ''}</div>
-              <div class="pc-meta">${esc(loc)}</div>
-            </div>
-          </div>
-          <div class="pc-body">
-            ${firstLine}
-            ${age ? `<div class="pc-row">${age}</div>` : ''}
-            ${how ? `<div class="pc-row">${how}</div>` : ''}
-            ${dream ? `<div class="pc-row">${dream}</div>` : ''}
-            ${story ? `<div class="pc-note small">“${story}”</div>` : ''}
-          </div>
-        </div>
-      `;
-    }
-
-    async function loadPins(openId){
-      try {
-        const res = await fetch('/api/submissions', { headers: { 'Accept': 'application/json' } });
-        const rows = await res.json();
-        cluster.clearLayers();
-        markers.length = 0;
-
-        rows.forEach(item => {
-          const lat = Number(item.lat), lng = Number(item.lng);
-          if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-
-          const m = L.marker([lat,lng]).bindPopup(playerCardHTML(item), { minWidth: 260, maxWidth: 340 });
-          cluster.addLayer(m);
-          markers.push({ id: item.id, marker: m });
-        });
-
-        if(markers.length){
-          const g = L.featureGroup(markers.map(m => m.marker));
-          map.fitBounds(g.getBounds().pad(0.25));
-        }
-
-        if (openId){
-          const found = markers.find(m => m.id === openId);
-          if (found){
-            found.marker.addTo(map);
-            found.marker.openPopup();
-            const c = found.marker.getLatLng();
-            map.setView(c, 12);
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to load pins', e);
-      }
-    }
-
-    // Mini picker
-    function initMiniPicker(){
-      const el = $('#picker-map'); if (!el) return;
-      const map2 = L.map('picker-map', { attributionControl: false, zoomControl: true });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map2);
-      const start = [20, 0];
-      map2.setView(start, 2);
-
-      const marker = L.marker(start, { draggable: true }).addTo(map2);
-      const latEl = $('#lat'), lngEl = $('#lng');
-      marker.on('dragend', () => {
-        const p = marker.getLatLng();
-        latEl.value = String(p.lat.toFixed(6));
-        lngEl.value = String(p.lng.toFixed(6));
-      });
-
-      function tryCenter() {
-        const lat = Number(latEl.value), lng = Number(lngEl.value);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          map2.setView([lat, lng], 13);
-          marker.setLatLng([lat, lng]);
-        }
-      }
-      setTimeout(tryCenter, 800);
-      ['input','change'].forEach(ev=>{
-        latEl.addEventListener(ev, tryCenter);
-        lngEl.addEventListener(ev, tryCenter);
-      });
-
-      return { map2, marker };
-    }
-
-    // ---- Course suggestions with Nominatim ----
-    function debounce(fn, ms){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
-    async function nominatimCourseSearch({ q, country, city }){
-      // Build a helpful query: prefer course names with "golf"
-      const parts = [q];
-      if (city) parts.push(city);
-      if (country) parts.push(country);
-      const query = parts.filter(Boolean).join(', ');
-      const url = new URL('https://nominatim.openstreetmap.org/search');
-      url.searchParams.set('format','json');
-      url.searchParams.set('limit','8');
-      url.searchParams.set('q', `golf ${query}`);
-
-      try {
-        const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
-        if (!res.ok) return [];
-        const json = await res.json();
-        // Keep results that look like golf courses/clubs
-        return json
-          .filter(r => /golf/i.test(r.display_name) || /golf/i.test(r.type||'') || /golf/i.test(r.class||''))
-          .map(r => ({ label: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) }));
-      } catch { return []; }
-    }
-
-    // ---- Form logic + steps ----
-    function setStep(step){
-      $('#step-1').style.display = step===1 ? '' : 'none';
-      $('#step-2').style.display = step===2 ? '' : 'none';
-      $('#step-3').style.display = step===3 ? '' : 'none';
-      $('#stepbar-1').className = 'step ' + (step>=1 ? 'done' :'');
-      $('#stepbar-2').className = 'step ' + (step>=2 ? 'done active' :'');
-      $('#stepbar-3').className = 'step ' + (step>=3 ? 'done active' :'');
-    }
-
-    function showToast(msg){
-      const t = $('#toast'); const txt = $('#toast-text');
-      txt.textContent = msg || '✅ Your story has been added. We’ve dropped your pin!';
-      t.classList.add('show');
-    }
-
-    function hideToast(){ $('#toast').classList.remove('show'); }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      initMap();
-      await loadPins();
-
-      // Country autocompletes
-      makeAutocomplete($('#homeCountry'), $('#home-country-suggestions'), countrySource);
-      makeAutocomplete($('#country'), $('#country-suggestions'), countrySource);
-
-      // Year select
-      fillYearSelect($('#startedYearSelect'));
-
-      // Mini picker
-      const picker = initMiniPicker();
-
-      // Course live suggestions
-      const courseInput = $('#course');
-      const courseList = $('#course-suggestions');
-      let courseCache = [];
-      const updateCourse = debounce(async () => {
-        const q = courseInput.value.trim(); if(!q) { courseList.style.display='none'; return; }
-        const country = $('#country').value.trim();
-        const city = $('#city').value.trim();
-        courseCache = await nominatimCourseSearch({ q, country, city });
-        if (courseCache.length === 0) { courseList.style.display='none'; courseList.innerHTML=''; return; }
-        courseList.innerHTML = courseCache.map((c,i)=> `<div class="ac-item" data-i="${i}">${esc(c.label)}</div>`).join('');
-        courseList.style.display='block';
-      }, 280);
-      courseInput.addEventListener('input', updateCourse);
-      courseList.addEventListener('mousedown', (e)=>{
-        const it = e.target.closest('.ac-item'); if(!it) return;
-        const i = Number(it.dataset.i);
-        const sel = courseCache[i];
-        if (sel){
-          courseInput.value = sel.label.split(',')[0]; // keep short
-          $('#lat').value = String(sel.lat);
-          $('#lng').value = String(sel.lng);
-          courseList.style.display='none';
-          // center mini picker
-          if (picker){
-            picker.map2.setView([sel.lat, sel.lng], 14);
-            picker.marker.setLatLng([sel.lat, sel.lng]);
-          }
-        }
-      });
-      document.addEventListener('click',(e)=>{ if(!courseList.contains(e.target) && e.target!==courseInput) courseList.style.display='none'; });
-
-      // Steps
-      $('#next-1').addEventListener('click', ()=>{
-        // minimal validation
-        const first = $('input[name="firstName"]').value.trim();
-        const homeC = $('input[name="homeCountry"]').value.trim();
-        if (!first || !homeC){ alert('Please enter your first name and home country.'); return; }
-        setStep(2);
-        document.getElementById('submit').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-
-      $('#back-2').addEventListener('click', ()=> setStep(1));
-      $('#next-2').addEventListener('click', ()=>{
-        const country = $('#country').value.trim();
-        const course  = $('#course').value.trim();
-        if (!country || !course){ alert('Please enter a country and a course name.'); return; }
-        setStep(3);
-      });
-
-      $('#back-3').addEventListener('click', ()=> setStep(2));
-
-      // Pre-submit: try geocoding if coords missing
-      const form = $('#mfgc-form');
-      form.addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const status = $('#status');
-        status.textContent = 'Submitting…';
-
-        // If no coords yet, try fallback geocode
-        if (!$('#lat').value || !$('#lng').value){
-          const qFull = [$('#course').value, $('#city').value, $('#country').value].filter(Boolean).join(', ');
-          try {
-            const url = new URL('https://nominatim.openstreetmap.org/search');
-            url.searchParams.set('q', qFull);
-            url.searchParams.set('format','json');
-            url.searchParams.set('limit','1');
-            const res = await fetch(url); if (res.ok){
-              const j = await res.json();
-              if (Array.isArray(j) && j[0]){
-                $('#lat').value = String(parseFloat(j[0].lat));
-                $('#lng').value = String(parseFloat(j[0].lon));
-              }
-            }
-          } catch {}
-        }
-
-        // Build payload (FormData auto-includes all inputs from step 1)
-        // Add step 2 + 3 named fields that are in the DOM already.
-        // Ensure consent checked:
-        if (!$('#consentMapPin').checked){
-          status.textContent = 'Please tick the consent checkbox.';
-          return;
-        }
-
-        try {
-          const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
-          const json = await res.json();
-          if (!res.ok) throw new Error(json.error || 'Submission failed');
-
-          // Celebrate: toast + drop pin + open card
-          showToast('✅ Your story has been added. We’ve dropped your pin!');
-          $('#toast-close').onclick = hideToast;
-
-          // Reload pins and open the new one (API should return {ok,id})
-          const newId = json.id;
-          await loadPins(newId);
-
-          // Scroll to map
-          await sleep(200);
-          document.getElementById('map-section').scrollIntoView({ behavior:'smooth', block:'start' });
-
-          // Reset stepper for next person
-          form.reset();
-          $('#course-suggestions').style.display='none';
-          setStep(1);
-          status.textContent = '';
-        } catch (err){
-          status.textContent = 'Error: ' + (err?.message || 'Something went wrong');
-        }
-      });
-
-      // Toast close
-      $('#toast-close').addEventListener('click', hideToast);
-
-      // Start at step 1
-      setStep(1);
-    });
-  })();
-  </script>
+  <!-- App logic -->
+  <script src="/site.js"></script>
+  <script src="/form-enhancements.js"></script>
 </body>
 </html>
-
