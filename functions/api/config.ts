@@ -1,8 +1,6 @@
 export const onRequestGet: PagesFunction = async ({ env }) => {
-  const token = (env as any).MAPBOX_PUBLIC_TOKEN || "";
-  const ok = !!token;
-  return new Response(JSON.stringify({ ok, token: ok ? token : null }), {
+  const token = (env as any)?.MAPBOX_TOKEN || "";
+  return new Response(JSON.stringify({ mapboxToken: token }), {
     headers: { "content-type": "application/json", "cache-control": "no-store" },
-    status: ok ? 200 : 200
   });
 };
