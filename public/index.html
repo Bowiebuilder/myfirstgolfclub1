@@ -1,122 +1,665 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My First Golf Club</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>My First Golf Club</title>
 
-  <!-- Site CSS -->
-  <link rel="stylesheet" href="/styles.css" />
+<!-- Mapbox GL CSS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
 
-  <!-- Mapbox CSS (map + geocoder) -->
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.css" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f6f7f9;
+  --card:#ffffff;
+  --ink:#0f172a;
+  --muted:#64748b;
+  --border:#e5e7eb;
+  --brand:#0b6b3a;         /* Augusta-ish green */
+  --brand-2:#d4af37;       /* subtle gold */
+  --focus:#2563eb;
+}
 
-  <!-- Mapbox GL + Geocoder -->
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.min.js"></script>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:var(--ink); background:var(--bg);
+}
 
-  <!-- Your Mapbox Token -->
-  <script>
-    window.MAPBOX_TOKEN = "pk.eyJ1IjoiYm93aWViZW5kZXIiLCJhIjoiY21nbDFvbHRmMDRtcTJsc2FoaGRtZjNudCJ9.Op70cN8itrQlnUH3vVQ49A";
-  </script>
+/* Page chrome */
+.wrap{max-width:1200px; margin:0 auto; padding:16px}
+.frame{background:linear-gradient(180deg,#f3f4f6, #ffffff); padding:8px 0}
 
-  <!-- Cloudflare Turnstile -->
-  <script defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" async></script>
+/* Hero */
+.hero{
+  max-width:1100px; margin:12px auto 12px; padding:12px 16px;
+}
+.hero h1{
+  font-family: "Georgia", "Times New Roman", serif;
+  font-weight:800; letter-spacing:-0.5px;
+  margin:0 0 4px; font-size: clamp(28px, 5vw, 40px);
+}
+.hero p{margin:0; color:var(--muted)}
+
+/* Map */
+.card{border:1px solid var(--border); border-radius:16px; background:var(--card); padding:14px}
+#global-map{height:64vh; min-height:420px; border-radius:12px; overflow:hidden}
+.mapboxgl-canvas{outline:none}
+
+/* Sections */
+.section{border:1px solid var(--border); border-radius:16px; background:var(--card); padding:16px; margin-top:16px}
+.section h2{
+  font-family: "Georgia", "Times New Roman", serif;
+  margin:0 0 6px; font-size: clamp(22px, 4vw, 28px);
+}
+.subtext{color:var(--muted); margin:0 0 12px}
+
+/* Form */
+form{display:grid; gap:14px}
+.grid-2{display:grid; gap:12px; grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:800px){ .grid-2{grid-template-columns:1fr} }
+
+label{display:block; font-weight:600; color:var(--ink); margin-bottom:4px}
+.input, .select, textarea{
+  width:100%; padding:12px 12px; border:1px solid var(--border);
+  border-radius:12px; background:#fff; font-size:16px;
+}
+textarea{min-height:110px; resize:vertical}
+.hint{color:var(--muted); font-size:13px; margin-top:6px}
+
+/* Autocomplete list */
+.field-rel{position:relative}
+.ac-list{
+  position:absolute; top:100%; left:0; right:0; z-index:30; display:none;
+  background:#fff; border:1px solid var(--border); border-radius:12px; margin-top:6px;
+  max-height:260px; overflow:auto; box-shadow:0 12px 30px rgba(0,0,0,.08)
+}
+.ac-item{padding:10px 12px; cursor:pointer}
+.ac-item:hover, .ac-item.active{background:#eef2ff}
+
+/* Buttons */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 16px; border-radius:12px; border:1px solid #0f172a; background:#0f172a; color:#fff;
+  font-weight:700; cursor:pointer;
+}
+.btn:hover{opacity:.95}
+
+/* Consent row */
+.consent{display:flex; align-items:center; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:12px; background:#fff}
+
+/* Toast */
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%); top:16px; z-index:50;
+  background:#fff; border:1px solid var(--border); border-radius:12px; padding:12px 14px; box-shadow:0 16px 40px rgba(0,0,0,.12);
+  display:none; gap:10px; align-items:center;
+}
+.toast.show{display:flex}
+.toast .ball{width:18px; height:18px; border-radius:50%; background:var(--brand); box-shadow:inset 0 0 0 3px #fff}
+
+/* Player card popup */
+.popup{
+  max-width:320px; font-size:14px;
+}
+.p-head{display:flex; gap:10px; align-items:center}
+.p-flag{
+  width:36px; height:36px; border-radius:50%; background:#0f172a; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;
+}
+.p-name{font-weight:800}
+.p-meta{color:var(--muted); font-size:13px}
+.p-body{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+.p-row span{color:var(--muted); margin-right:4px}
+
+/* Status */
+.status{min-height:1.2em; color:var(--muted); font-weight:600}
+</style>
 </head>
 <body>
+<div class="frame">
+  <div class="wrap hero">
+    <h1>Where did your golf journey begin?</h1>
+    <p>Share your first-round story and join golfers from around the world on our interactive map.</p>
+  </div>
+</div>
 
-  <header class="site-header">
-    <h1>My First Golf Club</h1>
-    <p>Explore where golfers around the world played their first full round — and add your story.</p>
-  </header>
-
+<div class="wrap">
   <!-- MAP -->
-  <section class="card wide">
-    <div id="map"></div>
-  </section>
-
-  <!-- STATS -->
-  <section class="card">
-    <h2>Community stats</h2>
-    <div class="stats-grid">
-      <div class="stat"><div class="stat-label">Total users</div><div class="stat-value" id="stat-total">—</div></div>
-      <div class="stat"><div class="stat-label">Average starting age</div><div class="stat-value" id="stat-avg-age">—</div></div>
-      <div class="stat"><div class="stat-label">Youngest starting</div><div class="stat-value" id="stat-youngest">—</div></div>
-      <div class="stat"><div class="stat-label">Oldest starting</div><div class="stat-value" id="stat-oldest">—</div></div>
-      <div class="stat"><div class="stat-label">Top countries</div><div class="stat-value" id="stat-top-countries">—</div></div>
-    </div>
+  <section class="card" aria-label="Global map">
+    <div id="global-map"></div>
   </section>
 
   <!-- FORM -->
-  <section class="card">
-    <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data">
-      <h2>Add Your Story</h2>
-
-      <!-- STEP 1 -->
-      <fieldset class="group">
-        <legend>About You</legend>
-        <label>First Name and Surname Initial <span class="req">*</span>
-          <input id="nameCombo" name="nameCombo" placeholder="e.g., John M" required />
-        </label>
-        <label>Home country (flag shown on your card)
-          <div class="field-relative">
-            <input name="homeCountry" id="homeCountry" autocomplete="off" placeholder="Start typing a country…" />
-            <div id="home-country-suggestions" class="ac-list" role="listbox" style="display:none"></div>
-          </div>
-        </label>
-      </fieldset>
-
-      <!-- STEP 2 -->
-      <fieldset class="group">
-        <legend>First Swing</legend>
-        <p class="subtle">How did you start your journey in golf?</p>
-        <div class="grid two-col">
-          <div>
-            <label>Age when you started <span class="req">*</span>
-              <select id="ageStarted" name="ageWhenStarted" required></select>
-            </label>
-            <label>Who got you started? (optional)
-              <input name="whoStarted" id="whoStarted" maxlength="30" placeholder="Grandfather, parent, friend…" />
-            </label>
-          </div>
-          <div>
-            <label>Location where you started <span class="req">*</span>
-              <div id="startLocation" class="mbx-geocoder"></div>
-              <input type="hidden" id="lat" name="lat" />
-              <input type="hidden" id="lng" name="lng" />
-            </label>
-            <label>Address of location
-              <input id="addressOutput" name="resolvedAddress" placeholder="Will appear after you choose a place" readonly />
-            </label>
-          </div>
-        </div>
-      </fieldset>
-
-      <!-- STEP 3 -->
-      <fieldset class="group">
-        <legend>Clubhouse Tales</legend>
-        <label>Favourite golfing story (optional)
-          <textarea name="story" maxlength="2000" placeholder="What golfing memory always makes you smile?"></textarea>
-        </label>
-        <label>Dream golf course (optional)
-          <div id="dreamCourseBox" class="mbx-geocoder"></div>
-          <input type="hidden" id="dreamCourse" name="dreamCourse" />
-        </label>
-      </fieldset>
-
-      <div class="consent-row">
-        <input type="checkbox" id="consentMapPin" name="consentMapPin" required />
-        <label for="consentMapPin" class="consent-label">I’m happy for a pin to appear on the map for this submission.</label>
+  <section class="section" aria-label="Submission form">
+    <h2>About You</h2>
+    <form id="mfgc-form" method="post" action="/api/submissions" enctype="multipart/form-data" novalidate>
+      <!-- About You -->
+      <div>
+        <label for="nameFull">First name and surname initial</label>
+        <input id="nameFull" class="input" placeholder="e.g., John M" required />
       </div>
 
+      <div>
+        <label for="homeCountry">Home country</label>
+        <div class="field-rel">
+          <input id="homeCountry" class="input" placeholder="Start typing a country…" autocomplete="off" />
+          <div id="homeCountry-ac" class="ac-list" role="listbox" style="display:none"></div>
+        </div>
+        <p class="hint">Shown as a flag on your player card (optional).</p>
+      </div>
+
+      <!-- First Swing -->
+      <h2 style="margin-top:10px">First Swing</h2>
+      <p class="subtext">How did you start your journey in golf?</p>
+      <div class="grid-2">
+        <div>
+          <label for="ageStart">Age when you started</label>
+          <select id="ageStart" class="select" required></select>
+
+          <div style="margin-top:10px">
+            <label for="whoStart">Who got you started?</label>
+            <input id="whoStart" class="input" maxlength="30" placeholder="e.g., Grandfather, parent, friend…" />
+          </div>
+        </div>
+
+        <div>
+          <label for="startLocation">Location where you started</label>
+          <div class="field-rel">
+            <input id="startLocation" class="input" placeholder="City, area, golf club…" autocomplete="off" />
+            <div id="startLocation-ac" class="ac-list" role="listbox" style="display:none"></div>
+          </div>
+          <div style="margin-top:8px">
+            <label for="resolvedAddress">Address of location</label>
+            <input id="resolvedAddress" class="input" readonly placeholder="Will appear after choosing a place" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Clubhouse Tales -->
+      <h2 style="margin-top:10px">Clubhouse Tales</h2>
+      <div>
+        <label for="memory">Favourite golfing story</label>
+        <textarea id="memory" class="input" placeholder="What golfing memory always makes you smile?"></textarea>
+      </div>
+
+      <div>
+        <label for="dreamCourse">Dream golf course (optional)</label>
+        <div class="field-rel">
+          <input id="dreamCourse" class="input" placeholder="Start typing a course…" autocomplete="off" />
+          <div id="dreamCourse-ac" class="ac-list" role="listbox" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- Consent + hidden fields -->
+      <div class="consent">
+        <input type="checkbox" id="consentMapPin" required />
+        <label for="consentMapPin" style="margin:0;font-weight:700">I’m happy for a pin to appear on the map for this submission.</label>
+      </div>
+
+      <input type="hidden" id="firstName" name="firstName" />
+      <input type="hidden" id="lastInitial" name="lastInitial" />
+      <input type="hidden" id="homeCountryHidden" name="homeCountry" />
+      <input type="hidden" id="country" name="country" />
+      <input type="hidden" id="city" name="city" />
+      <input type="hidden" id="firstGolfClub" name="firstGolfClub" />
+      <input type="hidden" id="lat" name="lat" />
+      <input type="hidden" id="lng" name="lng" />
+      <input type="hidden" id="ageWhenStarted" name="ageWhenStarted" />
+      <input type="hidden" id="howGotIntoGolf" name="howGotIntoGolf" />
+      <input type="hidden" id="story" name="story" />
+      <input type="hidden" id="dreamCourseHidden" name="dreamCourse" />
+      <input type="hidden" id="consentMapPinHidden" name="consentMapPin" value="on" />
+
+      <!-- Turnstile (already configured on your site) -->
       <div class="cf-turnstile" data-sitekey="0x4AAAAAAB5r0dz4fZGQZB2z"></div>
+
       <button type="submit" class="btn">Submit</button>
-      <p id="status" class="status"></p>
+      <div id="status" class="status"></div>
     </form>
   </section>
+</div>
 
-  <!-- Site JS -->
-  <script src="/site.js"></script>
+<!-- Toast -->
+<div id="toast" class="toast" role="status" aria-live="polite">
+  <div class="ball"></div>
+  <div><strong>Success!</strong> Your story was added — opening your pin…</div>
+</div>
+
+<!-- Mapbox GL JS -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+<script>
+/* ============================
+   Helper: country list + flags
+   ============================ */
+const ISO_COUNTRIES = [
+  { name:"Afghanistan", code:"AF"},{name:"Albania",code:"AL"},{name:"Algeria",code:"DZ"},
+  { name:"Andorra",code:"AD"},{name:"Angola",code:"AO"},{name:"Antigua and Barbuda",code:"AG"},
+  { name:"Argentina",code:"AR"},{name:"Armenia",code:"AM"},{name:"Australia",code:"AU"},
+  { name:"Austria",code:"AT"},{name:"Azerbaijan",code:"AZ"},{name:"Bahamas",code:"BS"},
+  { name:"Bahrain",code:"BH"},{name:"Bangladesh",code:"BD"},{name:"Barbados",code:"BB"},
+  { name:"Belarus",code:"BY"},{name:"Belgium",code:"BE"},{name:"Belize",code:"BZ"},
+  { name:"Benin",code:"BJ"},{name:"Bhutan",code:"BT"},{name:"Bolivia",code:"BO"},
+  { name:"Bosnia and Herzegovina",code:"BA"},{name:"Botswana",code:"BW"},{name:"Brazil",code:"BR"},
+  { name:"Brunei",code:"BN"},{name:"Bulgaria",code:"BG"},{name:"Burkina Faso",code:"BF"},
+  { name:"Burundi",code:"BI"},{name:"Cambodia",code:"KH"},{name:"Cameroon",code:"CM"},
+  { name:"Canada",code:"CA"},{name:"Cape Verde",code:"CV"},{name:"Central African Republic",code:"CF"},
+  { name:"Chad",code:"TD"},{name:"Chile",code:"CL"},{name:"China",code:"CN"},
+  { name:"Colombia",code:"CO"},{name:"Comoros",code:"KM"},{name:"Congo (Brazzaville)",code:"CG"},
+  { name:"Congo (Kinshasa)",code:"CD"},{name:"Costa Rica",code:"CR"},{name:"Cote d'Ivoire",code:"CI"},
+  { name:"Croatia",code:"HR"},{name:"Cuba",code:"CU"},{name:"Cyprus",code:"CY"},
+  { name:"Czechia",code:"CZ"},{name:"Denmark",code:"DK"},{name:"Djibouti",code:"DJ"},
+  { name:"Dominica",code:"DM"},{name:"Dominican Republic",code:"DO"},{name:"Ecuador",code:"EC"},
+  { name:"Egypt",code:"EG"},{name:"El Salvador",code:"SV"},{name:"Equatorial Guinea",code:"GQ"},
+  { name:"Eritrea",code:"ER"},{name:"Estonia",code:"EE"},{name:"Eswatini",code:"SZ"},
+  { name:"Ethiopia",code:"ET"},{name:"Fiji",code:"FJ"},{name:"Finland",code:"FI"},
+  { name:"France",code:"FR"},{name:"Gabon",code:"GA"},{name:"Gambia",code:"GM"},
+  { name:"Georgia",code:"GE"},{name:"Germany",code:"DE"},{name:"Ghana",code:"GH"},
+  { name:"Greece",code:"GR"},{name:"Grenada",code:"GD"},{name:"Guatemala",code:"GT"},
+  { name:"Guinea",code:"GN"},{name:"Guinea-Bissau",code:"GW"},{name:"Guyana",code:"GY"},
+  { name:"Haiti",code:"HT"},{name:"Honduras",code:"HN"},{name:"Hungary",code:"HU"},
+  { name:"Iceland",code:"IS"},{name:"India",code:"IN"},{name:"Indonesia",code:"ID"},
+  { name:"Iran",code:"IR"},{name:"Iraq",code:"IQ"},{name:"Ireland",code:"IE"},
+  { name:"Israel",code:"IL"},{name:"Italy",code:"IT"},{name:"Jamaica",code:"JM"},
+  { name:"Japan",code:"JP"},{name:"Jordan",code:"JO"},{name:"Kazakhstan",code:"KZ"},
+  { name:"Kenya",code:"KE"},{name:"Kiribati",code:"KI"},{name:"Kuwait",code:"KW"},
+  { name:"Kyrgyzstan",code:"KG"},{name:"Laos",code:"LA"},{name:"Latvia",code:"LV"},
+  { name:"Lebanon",code:"LB"},{name:"Lesotho",code:"LS"},{name:"Liberia",code:"LR"},
+  { name:"Libya",code:"LY"},{name:"Liechtenstein",code:"LI"},{name:"Lithuania",code:"LT"},
+  { name:"Luxembourg",code:"LU"},{name:"Madagascar",code:"MG"},{name:"Malawi",code:"MW"},
+  { name:"Malaysia",code:"MY"},{name:"Maldives",code:"MV"},{name:"Mali",code:"ML"},
+  { name:"Malta",code:"MT"},{name:"Marshall Islands",code:"MH"},{name:"Mauritania",code:"MR"},
+  { name:"Mauritius",code:"MU"},{name:"Mexico",code:"MX"},{name:"Moldova",code:"MD"},
+  { name:"Monaco",code:"MC"},{name:"Mongolia",code:"MN"},{name:"Montenegro",code:"ME"},
+  { name:"Morocco",code:"MA"},{name:"Mozambique",code:"MZ"},{name:"Myanmar",code:"MM"},
+  { name:"Namibia",code:"NA"},{name:"Nauru",code:"NR"},{name:"Nepal",code:"NP"},
+  { name:"Netherlands",code:"NL"},{name:"New Zealand",code:"NZ"},{name:"Nicaragua",code:"NI"},
+  { name:"Niger",code:"NE"},{name:"Nigeria",code:"NG"},{name:"North Macedonia",code:"MK"},
+  { name:"Norway",code:"NO"},{name:"Oman",code:"OM"},{name:"Pakistan",code:"PK"},
+  { name:"Palau",code:"PW"},{name:"Panama",code:"PA"},{name:"Papua New Guinea",code:"PG"},
+  { name:"Paraguay",code:"PY"},{name:"Peru",code:"PE"},{name:"Philippines",code:"PH"},
+  { name:"Poland",code:"PL"},{name:"Portugal",code:"PT"},{name:"Qatar",code:"QA"},
+  { name:"Romania",code:"RO"},{name:"Russia",code:"RU"},{name:"Rwanda",code:"RW"},
+  { name:"Saint Kitts and Nevis",code:"KN"},{name:"Saint Lucia",code:"LC"},
+  { name:"Saint Vincent and the Grenadines",code:"VC"},{name:"Samoa",code:"WS"},
+  { name:"San Marino",code:"SM"},{name:"Sao Tome and Principe",code:"ST"},
+  { name:"Saudi Arabia",code:"SA"},{name:"Senegal",code:"SN"},{name:"Serbia",code:"RS"},
+  { name:"Seychelles",code:"SC"},{name:"Sierra Leone",code:"SL"},{name:"Singapore",code:"SG"},
+  { name:"Slovakia",code:"SK"},{name:"Slovenia",code:"SI"},{name:"Solomon Islands",code:"SB"},
+  { name:"Somalia",code:"SO"},{name:"South Africa",code:"ZA"},{name:"South Korea",code:"KR"},
+  { name:"Spain",code:"ES"},{name:"Sri Lanka",code:"LK"},{name:"Sudan",code:"SD"},
+  { name:"Suriname",code:"SR"},{name:"Sweden",code:"SE"},{name:"Switzerland",code:"CH"},
+  { name:"Syria",code:"SY"},{name:"Taiwan",code:"TW"},{name:"Tajikistan",code:"TJ"},
+  { name:"Tanzania",code:"TZ"},{name:"Thailand",code:"TH"},{name:"Timor-Leste",code:"TL"},
+  { name:"Togo",code:"TG"},{name:"Tonga",code:"TO"},{name:"Trinidad and Tobago",code:"TT"},
+  { name:"Tunisia",code:"TN"},{name:"Turkey",code:"TR"},{name:"Turkmenistan",code:"TM"},
+  { name:"Tuvalu",code:"TV"},{name:"Uganda",code:"UG"},{name:"Ukraine",code:"UA"},
+  { name:"United Arab Emirates",code:"AE"},{name:"United Kingdom",code:"GB"},
+  { name:"United States",code:"US"},{name:"Uruguay",code:"UY"},{name:"Uzbekistan",code:"UZ"},
+  { name:"Vanuatu",code:"VU"},{name:"Venezuela",code:"VE"},{name:"Vietnam",code:"VN"},
+  { name:"Yemen",code:"YE"},{name:"Zambia",code:"ZM"},{name:"Zimbabwe",code:"ZW"}
+];
+const codeToFlag = code =>
+  code.replace(/./g, c => String.fromCodePoint(0x1F1E6 + (c.charCodeAt(0) - 65)));
+const nameToCode = name => {
+  if (!name) return null;
+  const m = ISO_COUNTRIES.find(c => c.name.toLowerCase() === name.toLowerCase());
+  return m ? m.code : null;
+};
+
+/* ============================
+   Minimal fetch of Mapbox token
+   ============================ */
+async function getMapboxToken(){
+  // 1) If a server function exposes it:
+  try{
+    const r = await fetch('/api/config');
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.mapboxToken) return j.mapboxToken;
+    }
+  }catch{}
+  // 2) Fallback to a global if you added it:
+  if (window.MAPBOX_TOKEN) return window.MAPBOX_TOKEN;
+  return null;
+}
+
+/* ============================
+   Home-country autocomplete
+   ============================ */
+function buildCountryAC(inputId, listId){
+  const input = document.getElementById(inputId);
+  const list  = document.getElementById(listId);
+  if (!input || !list) return;
+  let cur = -1;
+
+  function render(items){
+    list.innerHTML = items.map((c,i)=>`<div class="ac-item" data-name="${c.name}">${c.name}</div>`).join('');
+    list.style.display = items.length ? 'block' : 'none';
+  }
+
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim().toLowerCase();
+    if (!q){ list.style.display='none'; return; }
+    const items = ISO_COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)).slice(0,20);
+    render(items); cur=-1;
+  });
+
+  input.addEventListener('keydown', (e)=>{
+    const items = Array.from(list.querySelectorAll('.ac-item'));
+    if (!items.length) return;
+    if (e.key==='ArrowDown'){ e.preventDefault(); cur=Math.min(cur+1, items.length-1); items.forEach(i=>i.classList.remove('active')); items[cur].classList.add('active'); }
+    if (e.key==='ArrowUp'){ e.preventDefault(); cur=Math.max(cur-1,0); items.forEach(i=>i.classList.remove('active')); items[cur].classList.add('active'); }
+    if (e.key==='Enter'){ e.preventDefault(); if (cur>=0){ const name=items[cur].dataset.name; input.value=name; list.style.display='none'; } }
+    if (e.key==='Escape'){ list.style.display='none'; }
+  });
+
+  list.addEventListener('click', (e)=>{
+    const it = e.target.closest('.ac-item'); if (!it) return;
+    input.value = it.dataset.name;
+    list.style.display='none';
+  });
+
+  document.addEventListener('click', (e)=>{
+    if (!list.contains(e.target) && e.target!==input) list.style.display='none';
+  });
+}
+
+/* ============================
+   Map + pins + popups
+   ============================ */
+let map, pinsSourceId = 'submissions';
+let latestMarkerId = null;
+
+function popupHTML(s){
+  const esc = v => String(v||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const name = [esc(s.firstName), s.lastInitial ? esc(s.lastInitial)+'.' : ''].filter(Boolean).join(' ');
+  const flag = s.homeCountry ? (nameToCode(s.homeCountry) ? codeToFlag(nameToCode(s.homeCountry)) : '') : '';
+  const age  = s.ageWhenStarted ? `<div class="p-row"><span>Age started:</span> ${esc(s.ageWhenStarted)}</div>` : '';
+  const dream= s.dreamCourse ? `<div class="p-row"><span>Dream course:</span> ${esc(s.dreamCourse)}</div>` : '';
+  const memo = s.story ? `<div class="p-row"><span>Memory:</span> “${esc(s.story)}”</div>` : '';
+  return `
+    <div class="popup">
+      <div class="p-head">
+        <div class="p-flag">${flag || esc((s.firstName||'?')[0]).toUpperCase()}</div>
+        <div>
+          <div class="p-name">${name} ${flag?`<span style="margin-left:4px">${flag}</span>`:''}</div>
+          <div class="p-meta">${esc([s.city, s.country].filter(Boolean).join(', '))}</div>
+        </div>
+      </div>
+      <div class="p-body">
+        ${age}${dream}${memo}
+      </div>
+    </div>
+  `;
+}
+
+async function loadPins(){
+  const r = await fetch('/api/submissions');
+  const list = await r.json(); // expect []
+  // Normalize to GeoJSON features
+  const feats = list
+    .filter(s => Number.isFinite(+s.lat) && Number.isFinite(+s.lng))
+    .map((s, i) => ({
+      type:'Feature',
+      geometry:{ type:'Point', coordinates:[+s.lng, +s.lat] },
+      properties:{ ...s, __id: s.id || ('row-'+i) }
+    }));
+
+  const geo = { type:'FeatureCollection', features:feats };
+
+  if (map.getSource(pinsSourceId)) {
+    map.getSource(pinsSourceId).setData(geo);
+  } else {
+    map.addSource(pinsSourceId, { type:'geojson', data: geo });
+    map.addLayer({
+      id:'pins',
+      type:'circle',
+      source:pinsSourceId,
+      paint:{
+        'circle-radius': 6,
+        'circle-color': '#0b6b3a',
+        'circle-stroke-color':'#ffffff',
+        'circle-stroke-width':2
+      }
+    });
+
+    // Hover / click for popup
+    const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, maxWidth: '320px' });
+    map.on('mousemove','pins',(e)=>{
+      map.getCanvas().style.cursor='pointer';
+      const f = e.features[0]; if (!f) return;
+      popup.setLngLat(e.lngLat).setHTML(popupHTML(f.properties)).addTo(map);
+    });
+    map.on('mouseleave','pins',()=>{
+      map.getCanvas().style.cursor='';
+      popup.remove();
+    });
+    map.on('click','pins',(e)=>{
+      const f = e.features[0]; if (!f) return;
+      new mapboxgl.Popup({ closeButton:true, maxWidth:'320px' })
+        .setLngLat(e.lngLat)
+        .setHTML(popupHTML(f.properties))
+        .addTo(map);
+    });
+  }
+
+  // Fit bounds if we have points
+  if (feats.length){
+    const b = new mapboxgl.LngLatBounds();
+    feats.forEach(ft=>b.extend(ft.geometry.coordinates));
+    map.fitBounds(b, { padding: 40, duration: 800 });
+  }
+}
+
+function showToast(){ document.getElementById('toast').classList.add('show'); }
+function hideToast(){ document.getElementById('toast').classList.remove('show'); }
+
+/* ============================
+   Mapbox inline autocomplete
+   ============================ */
+function buildMapboxAC(inputId, listId, token, onPick){
+  const input = document.getElementById(inputId);
+  const list  = document.getElementById(listId);
+  if (!input || !list) return;
+  let cur = -1; let lastQ = ''; let timer;
+
+  async function search(q){
+    const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json`);
+    url.searchParams.set('access_token', token);
+    url.searchParams.set('autocomplete', 'true');
+    url.searchParams.set('types', 'poi,place,locality,region,address');
+    url.searchParams.set('limit', '8');
+    const r = await fetch(url.toString());
+    const j = await r.json();
+    return j.features || [];
+  }
+
+  function render(items){
+    list.innerHTML = items.map((f,i)=>`
+      <div class="ac-item" data-idx="${i}">
+        ${f.text} <span style="color:var(--muted)">— ${f.place_name}</span>
+      </div>`).join('');
+    list.style.display = items.length ? 'block' : 'none';
+  }
+
+  let results = [];
+
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim();
+    if (!q){ list.style.display='none'; return; }
+    if (q===lastQ) return;
+    lastQ = q;
+    clearTimeout(timer);
+    timer = setTimeout(async ()=>{
+      results = await search(q);
+      render(results);
+      cur = -1;
+    }, 180);
+  });
+
+  input.addEventListener('keydown', (e)=>{
+    const items = Array.from(list.querySelectorAll('.ac-item'));
+    if (!items.length) return;
+    if (e.key==='ArrowDown'){ e.preventDefault(); cur=Math.min(cur+1, items.length-1); items.forEach(i=>i.classList.remove('active')); items[cur].classList.add('active'); }
+    if (e.key==='ArrowUp'){ e.preventDefault(); cur=Math.max(cur-1,0); items.forEach(i=>i.classList.remove('active')); items[cur].classList.add('active'); }
+    if (e.key==='Enter'){ e.preventDefault(); if (cur>=0) pick(results[cur]); }
+    if (e.key==='Escape'){ list.style.display='none'; }
+  });
+
+  list.addEventListener('click',(e)=>{
+    const it = e.target.closest('.ac-item'); if (!it) return;
+    const idx = +it.dataset.idx; if (Number.isFinite(idx)) pick(results[idx]);
+  });
+
+  function pick(f){
+    input.value = f.text;
+    list.style.display = 'none';
+    onPick && onPick(f);
+  }
+
+  document.addEventListener('click', (e)=>{
+    if (!list.contains(e.target) && e.target!==input) list.style.display='none';
+  });
+}
+
+/* ============================
+   Form wiring
+   ============================ */
+async function boot(){
+  const token = await getMapboxToken();
+  if (!token){
+    const mapBox = document.getElementById('global-map');
+    mapBox.innerHTML = '<div style="padding:16px">Map unavailable. Missing Mapbox token.</div>';
+    return;
+  }
+
+  // Init map
+  mapboxgl.accessToken = token;
+  map = new mapboxgl.Map({
+    container: 'global-map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [0,20],
+    zoom: 1.5
+  });
+  map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.on('load', loadPins);
+
+  // Country AC (home country)
+  buildCountryAC('homeCountry','homeCountry-ac');
+
+  // Age dropdown 1..120
+  const ageSel = document.getElementById('ageStart');
+  for(let i=1;i<=120;i++){
+    const o=document.createElement('option'); o.value=o.textContent=String(i); ageSel.appendChild(o);
+  }
+
+  // Mapbox AC for Start Location
+  const startAddr = document.getElementById('resolvedAddress');
+  buildMapboxAC('startLocation','startLocation-ac', token, (f)=>{
+    startAddr.value = f.place_name;
+    // Hidden fields: lat/lng/course/country/city
+    const [lng,lat] = f.center;
+    document.getElementById('lat').value = String(lat);
+    document.getElementById('lng').value = String(lng);
+    document.getElementById('firstGolfClub').value = f.text || '';
+    const ctx = (f.context || []);
+    const country = (ctx.find(c=>c.id.startsWith('country'))?.text) || '';
+    const place   = (ctx.find(c=>c.id.startsWith('place'))?.text) || '';
+    document.getElementById('country').value = country;
+    document.getElementById('city').value = place;
+    // Nudge map to the picked spot
+    map.flyTo({ center:[lng,lat], zoom: 10, speed: 0.8 });
+  });
+
+  // Mapbox AC for Dream Course (optional)
+  buildMapboxAC('dreamCourse','dreamCourse-ac', token, (f)=>{
+    document.getElementById('dreamCourseHidden').value = f.text || f.place_name || '';
+    document.getElementById('dreamCourse').value = f.text || '';
+  });
+
+  // Submit
+  const form   = document.getElementById('mfgc-form');
+  const status = document.getElementById('status');
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    status.textContent = '';
+
+    // Validate required fields:
+    const nameFull = document.getElementById('nameFull').value.trim();
+    const ageVal   = document.getElementById('ageStart').value.trim();
+    const addrVal  = startAddr.value.trim();
+    if (!nameFull){ status.textContent = 'Please enter your name (e.g., John M).'; return; }
+    if (!ageVal){ status.textContent = 'Please choose your starting age.'; return; }
+    if (!addrVal){ status.textContent = 'Please choose the location where you started.'; return; }
+    if (!document.getElementById('consentMapPin').checked){ status.textContent = 'Please consent to the map pin.'; return; }
+
+    // Split name → firstName + lastInitial
+    const parts = nameFull.split(/\s+/);
+    const firstName = parts[0] || '';
+    const lastInitial = parts.length>1 ? parts[parts.length-1].slice(0,1).toUpperCase() : '';
+
+    // Home country hidden + emoji
+    const homeName = document.getElementById('homeCountry').value.trim();
+    document.getElementById('homeCountryHidden').value = homeName || '';
+
+    // Other hidden fields:
+    document.getElementById('firstName').value = firstName;
+    document.getElementById('lastInitial').value = lastInitial;
+    document.getElementById('ageWhenStarted').value = ageVal;
+    document.getElementById('howGotIntoGolf').value = document.getElementById('whoStart').value.trim();
+    document.getElementById('story').value = document.getElementById('memory').value.trim();
+
+    // Build payload
+    const fd = new FormData(form);
+    try{
+      status.textContent = 'Submitting…';
+      const res = await fetch(form.action, { method:'POST', body: fd });
+      const json = await res.json();
+      if (!res.ok || !json.ok){ throw new Error(json?.error || 'Submission failed'); }
+
+      // Visual success + refresh pins
+      showToast();
+
+      // Create a temporary feature for the new pin to fly + open popup
+      const lat = parseFloat(fd.get('lat'));
+      const lng = parseFloat(fd.get('lng'));
+      const s = {
+        firstName,
+        lastInitial,
+        homeCountry: homeName,
+        ageWhenStarted: ageVal,
+        dreamCourse: fd.get('dreamCourse') || fd.get('dreamCourseHidden') || '',
+        story: fd.get('story') || '',
+        city: fd.get('city') || '',
+        country: fd.get('country') || ''
+      };
+
+      // Fly to their spot and drop a popup
+      if (Number.isFinite(lat) && Number.isFinite(lng)){
+        map.flyTo({ center:[lng,lat], zoom: 12, speed: 0.8 });
+        new mapboxgl.Popup({ closeButton:true, maxWidth:'320px' })
+          .setLngLat([lng,lat])
+          .setHTML(popupHTML(s))
+          .addTo(map);
+      }
+
+      // Refresh source
+      await loadPins();
+
+      // Reset
+      form.reset();
+      document.getElementById('resolvedAddress').value = '';
+      setTimeout(hideToast, 2600);
+      status.textContent = '';
+    }catch(err){
+      status.textContent = 'Error: ' + (err?.message || 'Something went wrong');
+    }
+  });
+}
+
+// Boot
+document.addEventListener('DOMContentLoaded', boot);
+</script>
 </body>
 </html>
